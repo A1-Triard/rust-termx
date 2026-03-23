@@ -239,14 +239,14 @@ impl Layout {
             return;
         }
         let termx = layout.termx.upgrade().unwrap();
-        termx.termx().systems.borrow().as_ref().unwrap().render.invalidate_render(entity, world);
+        termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
         {
             let mut component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }
         entity.component::<View>(world, layout.view).unwrap().real_render_bounds = real_render_bounds;
-        termx.termx().systems.borrow().as_ref().unwrap().render.invalidate_render(entity, world);
+        termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
     }
 
     pub fn perform_impl(this: &Rc<dyn IsLayout>, root: Entity, world: &mut World, size: Vector) {
