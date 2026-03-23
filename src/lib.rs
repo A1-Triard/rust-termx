@@ -1,6 +1,8 @@
 #![feature(macro_metavar_expr_concat)]
 
-pub mod view;
+pub mod components;
+pub mod systems;
+pub mod termx;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
