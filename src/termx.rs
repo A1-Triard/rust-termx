@@ -74,6 +74,8 @@ pub struct Termx {
     set_view_layout_v_align: fn(entity: Entity, value: Option<VAlign>),
     #[non_virt]
     set_decorator_child: fn(entity: Entity, value: Option<Entity>),
+    #[non_virt]
+    set_background_pattern: fn(entity: Entity, value: String),
 }
 
 impl Termx {
