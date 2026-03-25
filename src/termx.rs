@@ -7,6 +7,7 @@ use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use ooecs::{Component, World};
 use std::cell::RefCell;
+use termx_screen_base::{Bg, Fg};
 
 import! { pub termx:
     use [obj basic_oop::obj];
@@ -68,6 +69,8 @@ pub struct Termx {
     new_background: fn() -> Entity,
     #[non_virt]
     set_background_pattern: fn(entity: Entity, value: String),
+    #[non_virt]
+    set_background_color: fn(entity: Entity, value: (Fg, Bg)),
 }
 
 impl Termx {
@@ -235,6 +238,14 @@ impl Termx {
         let mut data = termx.data.borrow_mut();
         let background = data.components.as_ref().unwrap().background;
         entity.get_mut::<Background>(background, &mut data.world).unwrap().pattern = value;
+        data.systems.as_ref().unwrap().render.clone().invalidate_render(entity, &mut data.world);
+    }
+
+    pub fn set_background_color_impl(this: &Rc<dyn IsTermx>, entity: Entity, value: (Fg, Bg)) {
+        let termx = this.termx();
+        let mut data = termx.data.borrow_mut();
+        let background = data.components.as_ref().unwrap().background;
+        entity.get_mut::<Background>(background, &mut data.world).unwrap().color = value;
         data.systems.as_ref().unwrap().render.clone().invalidate_render(entity, &mut data.world);
     }
 }
