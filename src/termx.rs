@@ -65,6 +65,8 @@ pub struct Termx {
     #[non_virt]
     set_decorator_child: fn(entity: Entity, value: Option<Entity>),
     #[non_virt]
+    new_background: fn() -> Entity,
+    #[non_virt]
     set_background_pattern: fn(entity: Entity, value: String),
 }
 
@@ -214,7 +216,7 @@ impl Termx {
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
-    pub fn new_background(this: &Rc<dyn IsTermx>) -> Entity {
+    pub fn new_background_impl(this: &Rc<dyn IsTermx>) -> Entity {
         let mut data = this.termx().data.borrow_mut();
         let view = data.components.as_ref().unwrap().view;
         let view_layout = data.components.as_ref().unwrap().view_layout;
