@@ -3,7 +3,14 @@ name = "termx"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = [
+    "screen-base",
+    "screen-ncurses",
+]
+
 [dependencies]
 basic-oop = "0.8.3"
 int-vec-2d = "0.2.1"
 ooecs = "0.0.2"
+termx-screen-base = { version = "0.1.0", path = "screen-base" }
