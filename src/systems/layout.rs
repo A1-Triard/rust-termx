@@ -83,11 +83,11 @@ impl Layout {
         h: Option<i16>
     ) -> Vector {
         let layout = this.layout();
-        if entity.component::<Background>(world, layout.background).is_some() {
-            let child = entity.component::<Decorator>(world, layout.decorator).as_ref().unwrap().child;
+        if entity.get::<Background>(layout.background, world).is_some() {
+            let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
             return if let Some(child) = child {
                 this.measure(child, world, w, h);
-                child.component::<ViewLayout>(world, layout.view_layout).as_ref().unwrap().desired_size
+                child.get::<ViewLayout>(layout.view_layout, world).unwrap().desired_size
             } else {
                 Vector::null()
             };
@@ -102,11 +102,11 @@ impl Layout {
         inner_bounds: Rect,
     ) -> Vector {
         let layout = this.layout();
-        if entity.component::<Background>(world, layout.background).is_some() {
-            let child = entity.component::<Decorator>(world, layout.decorator).as_ref().unwrap().child;
+        if entity.get::<Background>(layout.background, world).is_some() {
+            let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
             return if let Some(child) = child {
                 this.arrange(child, world, inner_bounds);
-                child.component::<ViewLayout>(world, layout.view_layout).as_ref().unwrap().render_bounds.size
+                child.get::<ViewLayout>(layout.view_layout, world).unwrap().render_bounds.size
             } else {
                 Vector::null()
             };
@@ -118,11 +118,11 @@ impl Layout {
         let layout = this.layout();
         loop {
             {
-                let mut view_layout = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+                let view_layout = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
                 view_layout.measure_size = None;
                 view_layout.arrange_size = None;
             }
-            let view = entity.component::<View>(world, layout.view).unwrap();
+            let view = entity.get::<View>(layout.view, world).unwrap();
             let Some(parent) = view.visual_parent else { break; };
             entity = parent;
         }
@@ -132,10 +132,10 @@ impl Layout {
         let layout = this.layout();
         loop {
             {
-                let mut view_layout = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+                let view_layout = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
                 view_layout.arrange_size = None;
             }
-            let view = entity.component::<View>(world, layout.view).unwrap();
+            let view = entity.get::<View>(layout.view, world).unwrap();
             let Some(parent) = view.visual_parent else { break; };
             entity = parent;
         }
@@ -150,7 +150,7 @@ impl Layout {
     ) {
         let (a_w, a_h, max_size, min_size) = {
             let layout = this.layout();
-            let component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             if component.measure_size == Some((w, h)) { return; }
             let max_width = component.width.or(component.max_width);
             let max_height = component.height.or(component.max_height);
@@ -170,7 +170,7 @@ impl Layout {
         };
         let desired_size = this.measure_override(entity, world, a_w, a_h);
         let layout = this.layout();
-        let mut component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+        let component = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
         let desired_size = desired_size.min(max_size).max(min_size);
         let desired_size = component.margin.expand_rect_size(desired_size);
         let desired_size = Vector {
@@ -189,7 +189,7 @@ impl Layout {
     ) {
         let (a_size, max_size, min_size) = {
             let layout = this.layout();
-            let component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             let max_width = component.width.or(component.max_width);
             let max_height = component.height.or(component.max_height);
             let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
@@ -214,16 +214,16 @@ impl Layout {
                 entity, world, Rect { tl: Point { x: 0, y: 0 }, size: a_size }
             );
             let layout = this.layout();
-            let component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             component.margin.expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
         } else {
             let layout = this.layout();
-            let component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             component.render_bounds.size
         };
         let (render_bounds, real_render_bounds) = {
             let layout = this.layout();
-            let component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             let h_align = component.h_align.unwrap_or(HAlign::Left);
             let v_align = component.v_align.unwrap_or(VAlign::Top);
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
@@ -232,8 +232,8 @@ impl Layout {
             (render_bounds, real_render_bounds)
         };
         let layout = this.layout();
-        if real_render_bounds == entity.component::<View>(world, layout.view).unwrap().real_render_bounds {
-            let mut component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+        if real_render_bounds == entity.get::<View>(layout.view, world).unwrap().real_render_bounds {
+            let component = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
             return;
@@ -241,11 +241,11 @@ impl Layout {
         let termx = layout.termx.upgrade().unwrap();
         termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
         {
-            let mut component = entity.component::<ViewLayout>(world, layout.view_layout).unwrap();
+            let component = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }
-        entity.component::<View>(world, layout.view).unwrap().real_render_bounds = real_render_bounds;
+        entity.get_mut::<View>(layout.view, world).unwrap().real_render_bounds = real_render_bounds;
         termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
     }
 

@@ -24,11 +24,11 @@ mod tests {
             let view_layout = data.components.as_ref().unwrap().view_layout;
             let decorator = data.components.as_ref().unwrap().decorator;
             let background = data.components.as_ref().unwrap().background;
-            let bg = Entity::new(&mut data.world);
-            bg.add_component(&mut data.world, view, View::new());
-            bg.add_component(&mut data.world, view_layout, ViewLayout::new());
-            bg.add_component(&mut data.world, decorator, Decorator::new());
-            bg.add_component(&mut data.world, background, Background::new());
+            let bg = Entity::new(background, &mut data.world);
+            bg.add(view, &mut data.world, View::new());
+            bg.add(view_layout, &mut data.world, ViewLayout::new());
+            bg.add(decorator, &mut data.world, Decorator::new());
+            bg.add(background, &mut data.world, Background::new());
             let layout = data.systems.as_ref().unwrap().layout.clone();
             layout.perform(bg, &mut data.world, Vector { x: 80, y: 25 });
             bg

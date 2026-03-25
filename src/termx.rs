@@ -33,16 +33,6 @@ pub struct TermxData {
     pub systems: Option<TermxSystems>,
 }
 
-impl Drop for TermxData {
-    fn drop(&mut self) {
-        let components = self.components.take().unwrap();
-        components.view.drop_component::<View>(&mut self.world);
-        components.view_layout.drop_component::<ViewLayout>(&mut self.world);
-        components.decorator.drop_component::<Decorator>(&mut self.world);
-        components.background.drop_component::<Background>(&mut self.world);
-    }
-}
-
 #[class_unsafe(inherits_Obj)]
 pub struct Termx {
     pub data: RefCell<TermxData>,
@@ -104,11 +94,15 @@ impl Termx {
     pub fn init_components_impl(this: &Rc<dyn IsTermx>) {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
+        let view = Component::new::<View>(None, &mut data.world);
+        let view_layout = Component::new::<ViewLayout>(Some(view), &mut data.world);
+        let decorator = Component::new::<Decorator>(Some(view_layout), &mut data.world);
+        let background = Component::new::<Background>(Some(decorator), &mut data.world);
         data.components = Some(TermxComponents {
-            view: Component::new::<View>(&mut data.world),
-            view_layout: Component::new::<ViewLayout>(&mut data.world),
-            decorator: Component::new::<Decorator>(&mut data.world),
-            background: Component::new::<Background>(&mut data.world),
+            view,
+            view_layout,
+            decorator,
+            background,
         });
     }
 
@@ -145,7 +139,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().min_size = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().min_size = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -153,7 +147,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().max_width = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().max_width = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -161,7 +155,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().max_height = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().max_height = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -169,7 +163,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().width = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().width = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -177,7 +171,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().height = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().height = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -185,7 +179,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().margin = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().margin = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -193,7 +187,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().h_align = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().h_align = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -201,7 +195,7 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let view_layout = data.components.as_ref().unwrap().view_layout;
-        entity.component::<ViewLayout>(&mut data.world, view_layout).unwrap().v_align = value;
+        entity.get_mut::<ViewLayout>(view_layout, &mut data.world).unwrap().v_align = value;
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
@@ -209,22 +203,36 @@ impl Termx {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let decorator = data.components.as_ref().unwrap().decorator;
-        let old_child = entity.component::<Decorator>(&mut data.world, decorator).unwrap().child;
+        let old_child = entity.get::<Decorator>(decorator, &mut data.world).unwrap().child;
         if let Some(child) = old_child {
             data.systems.as_ref().unwrap().render.clone().remove_visual_child(entity, child, &mut data.world);
         }
-        entity.component::<Decorator>(&mut data.world, decorator).unwrap().child = value;
+        entity.get_mut::<Decorator>(decorator, &mut data.world).unwrap().child = value;
         if let Some(child) = value {
             data.systems.as_ref().unwrap().render.clone().add_visual_child(entity, child, &mut data.world);
         }
         data.systems.as_ref().unwrap().layout.clone().invalidate_measure(entity, &mut data.world);
     }
 
+    pub fn new_background(this: &Rc<dyn IsTermx>) -> Entity {
+        let mut data = this.termx().data.borrow_mut();
+        let view = data.components.as_ref().unwrap().view;
+        let view_layout = data.components.as_ref().unwrap().view_layout;
+        let decorator = data.components.as_ref().unwrap().decorator;
+        let background = data.components.as_ref().unwrap().background;
+        let bg = Entity::new(background, &mut data.world);
+        bg.add(view, &mut data.world, View::new());
+        bg.add(view_layout, &mut data.world, ViewLayout::new());
+        bg.add(decorator, &mut data.world, Decorator::new());
+        bg.add(background, &mut data.world, Background::new());
+        bg
+    }
+
     pub fn set_background_pattern_impl(this: &Rc<dyn IsTermx>, entity: Entity, value: String) {
         let termx = this.termx();
         let mut data = termx.data.borrow_mut();
         let background = data.components.as_ref().unwrap().background;
-        entity.component::<Background>(&mut data.world, background).unwrap().pattern = value;
+        entity.get_mut::<Background>(background, &mut data.world).unwrap().pattern = value;
         data.systems.as_ref().unwrap().render.clone().invalidate_render(entity, &mut data.world);
     }
 }
