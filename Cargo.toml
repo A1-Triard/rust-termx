@@ -12,5 +12,7 @@ members = [
 [dependencies]
 basic-oop = "0.8.3"
 int-vec-2d = "0.2.1"
+iter-identify_first_last = "0.2.3"
 ooecs = "0.0.2"
+serde = { version = "1.0.228", default-features = false }
 termx-screen-base = { version = "0.1.0", path = "screen-base" }

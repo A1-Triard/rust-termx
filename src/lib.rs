@@ -1,8 +1,10 @@
 #![feature(macro_metavar_expr_concat)]
 
+pub mod base;
 pub mod components;
 pub mod systems;
 pub mod termx;
+pub mod render_port;
 
 #[cfg(test)]
 mod tests {
