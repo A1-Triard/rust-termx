@@ -125,7 +125,11 @@ impl Termx {
     pub fn create_render_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsRender> {
         let termx = this.termx();
         let data = termx.data.borrow();
-        Render::new(data.components.as_ref().unwrap().view, data.components.as_ref().unwrap().decorator)
+        Render::new(
+            data.components.as_ref().unwrap().view,
+            data.components.as_ref().unwrap().decorator,
+            data.components.as_ref().unwrap().background,
+        )
     }
 
     pub fn create_layout_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsLayout> {
@@ -226,7 +230,7 @@ impl Termx {
         let decorator = data.components.as_ref().unwrap().decorator;
         let background = data.components.as_ref().unwrap().background;
         let bg = Entity::new(background, &mut data.world);
-        bg.add(view, &mut data.world, View::new());
+        bg.add(view, &mut data.world, View::new(View::BACKGROUND));
         bg.add(view_layout, &mut data.world, ViewLayout::new());
         bg.add(decorator, &mut data.world, Decorator::new());
         bg.add(background, &mut data.world, Background::new());
