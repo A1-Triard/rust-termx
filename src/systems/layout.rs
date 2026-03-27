@@ -108,7 +108,7 @@ impl Layout {
                 this.arrange(child, world, inner_bounds);
                 child.get::<ViewLayout>(layout.view_layout, world).unwrap().render_bounds.size
             } else {
-                Vector::null()
+                inner_bounds.size
             };
         }
         Vector::null()
@@ -239,14 +239,14 @@ impl Layout {
             return;
         }
         let termx = layout.termx.upgrade().unwrap();
-        termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
+        termx.termx().systems().render.invalidate_render(entity, world);
         {
             let component = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }
         entity.get_mut::<View>(layout.view, world).unwrap().real_render_bounds = real_render_bounds;
-        termx.termx().data.borrow().systems.as_ref().unwrap().render.invalidate_render(entity, world);
+        termx.termx().systems().render.invalidate_render(entity, world);
     }
 
     pub fn perform_impl(this: &Rc<dyn IsLayout>, root: Entity, world: &mut World, size: Vector) {
