@@ -12,8 +12,9 @@ use termx_screen_base::{Bg, Fg};
 import! { pub termx:
     use [obj basic_oop::obj];
     use int_vec_2d::{Vector, Thickness, HAlign, VAlign};
-    use std::rc::Rc;
     use ooecs::{Entity};
+    use std::rc::Rc;
+    use termx_screen_base::{Screen, Error};
 }
 
 pub struct TermxComponents {
@@ -47,6 +48,8 @@ pub struct Termx {
     create_render: fn() -> Rc<dyn IsRender>,
     #[virt]
     create_layout: fn() -> Rc<dyn IsLayout>,
+    #[non_virt]
+    run: fn(root: Entity, screen: &mut dyn Screen) -> Result<(), Error>,
     #[non_virt]
     set_view_layout_min_size: fn(entity: Entity, value: Vector),
     #[non_virt]
@@ -142,6 +145,17 @@ impl Termx {
             data.components.as_ref().unwrap().background,
             data.components.as_ref().unwrap().decorator,
         )
+    }
+
+    pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity, screen: &mut dyn Screen) -> Result<(), Error> {
+        let termx = this.termx();
+        let mut data = termx.data.borrow_mut();
+        loop {
+            let screen_size = screen.size();
+            data.systems.as_ref().unwrap().layout.clone().perform(root, &mut data.world, screen_size);
+            let cursor = data.systems.as_ref().unwrap().render.clone().perform(root, &mut data.world, screen);
+            screen.update(cursor, true)?;
+        }
     }
 
     pub fn set_view_layout_min_size_impl(this: &Rc<dyn IsTermx>, entity: Entity, value: Vector) {

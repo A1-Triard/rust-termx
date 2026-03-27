@@ -35,7 +35,7 @@ pub struct Render {
     #[non_virt]
     invalidate_render: fn(entity: Entity, world: &World),
     #[non_virt]
-    perform: fn(root: Entity, world: &World, screen: &mut dyn Screen),
+    perform: fn(root: Entity, world: &World, screen: &mut dyn Screen) -> Option<Point>,
 }
 
 impl Render {
@@ -153,7 +153,12 @@ impl Render {
         }
     }
 
-    pub fn perform_impl(this: &Rc<dyn IsRender>, root: Entity, world: &World, screen: &mut dyn Screen) {
+    pub fn perform_impl(
+        this: &Rc<dyn IsRender>,
+        root: Entity,
+        world: &World,
+        screen: &mut dyn Screen,
+    ) -> Option<Point> {
         let render = this.render();
         let cursor = render.cursor.get();
         let mut invalidated_rect = render.invalidated_rect.replace(
@@ -174,5 +179,6 @@ impl Render {
         };
         Self::render_entity(this, root, world, &mut rp);
         render.cursor.set(rp.cursor);
+        rp.cursor
     }
 }
