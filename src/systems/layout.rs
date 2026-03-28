@@ -1,4 +1,6 @@
+use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
+use core::cmp::min;
 use crate::components::decorator::Decorator;
 use crate::components::view_layout::*;
 use crate::components::view::View;
@@ -6,8 +8,6 @@ use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
 use int_vec_2d::{HAlign, VAlign, Thickness, Point};
 use ooecs::Component;
-use std::cmp::min;
-use std::rc::{self, Rc};
 
 import! { pub layout:
     use [obj basic_oop::obj];

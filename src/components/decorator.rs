@@ -1,9 +1,9 @@
+use alloc::rc::Rc;
 use crate::property_ro;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
 use ooecs::Entity;
-use std::rc::Rc;
 
 pub struct Decorator {
     pub(crate) child: Option<Entity>,

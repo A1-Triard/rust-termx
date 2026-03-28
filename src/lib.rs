@@ -1,9 +1,18 @@
 #![feature(macro_metavar_expr_concat)]
 
+#![deny(warnings)]
+#![doc(test(attr(deny(warnings))))]
+#![doc(test(attr(allow(dead_code))))]
+#![doc(test(attr(allow(unused_variables))))]
+
+#![no_std]
+
+extern crate alloc;
+
 #[doc(hidden)]
 pub use paste::paste as paste_paste;
 #[doc(hidden)]
-pub use std::rc::Rc as alloc_rc_Rc;
+pub use alloc::rc::Rc as alloc_rc_Rc;
 #[doc(hidden)]
 pub use ooecs::Entity as ooecs_Entity;
 
@@ -12,6 +21,7 @@ pub mod components;
 pub mod systems;
 pub mod termx;
 pub mod render_port;
+pub mod template;
 
 #[macro_export]
 macro_rules! property_ro {
@@ -290,6 +300,7 @@ macro_rules! property {
 
 #[cfg(test)]
 mod tests {
+    use crate::alloc::string::ToString;
     use crate::components::background::Background;
     use crate::systems::layout::LayoutExt;
     use crate::termx::Termx;

@@ -1,10 +1,11 @@
+use alloc::string::{String, ToString};
+use alloc::rc::Rc;
 use crate::components::decorator::Decorator;
 use crate::components::view::*;
 use crate::components::view_layout::*;
 use crate::property;
 use crate::termx::IsTermx;
 use ooecs::Entity;
-use std::rc::Rc;
 use termx_screen_base::{Bg, Fg};
 
 pub struct Background {

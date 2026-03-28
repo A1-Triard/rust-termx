@@ -1,4 +1,6 @@
 use basic_oop::{Vtable, import, class_unsafe};
+use core::cell::{self, RefCell};
+use core::ops::Deref;
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
 use crate::components::view::View;
@@ -6,14 +8,12 @@ use crate::components::view_layout::ViewLayout;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use ooecs::{Component, World};
-use std::cell::{self, RefCell};
-use std::ops::Deref;
 
 import! { pub termx:
     use [obj basic_oop::obj];
+    use alloc::rc::Rc;
     use int_vec_2d::{Vector, Thickness, HAlign, VAlign};
     use ooecs::{Entity};
-    use std::rc::Rc;
     use termx_screen_base::{Screen, Error};
 }
 

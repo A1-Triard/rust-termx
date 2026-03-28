@@ -1,12 +1,12 @@
+use alloc::rc::Rc;
 use basic_oop::{Vtable, import, class_unsafe};
+use core::cell::Cell;
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
 use int_vec_2d::{Vector, Point, Rect};
 use ooecs::Component;
-use std::cell::Cell;
-use std::rc::Rc;
 
 import! { pub render:
     use [obj basic_oop::obj];
