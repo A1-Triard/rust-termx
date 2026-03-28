@@ -18,10 +18,10 @@ import! { pub termx:
 }
 
 pub struct TermxComponents {
-    pub view: Component,
-    pub view_layout: Component,
-    pub decorator: Component,
-    pub background: Component,
+    pub view: Component<View, Termx>,
+    pub view_layout: Component<ViewLayout, Termx>,
+    pub decorator: Component<Decorator, Termx>,
+    pub background: Component<Background, Termx>,
 }
 
 pub struct TermxSystems {
@@ -41,7 +41,7 @@ impl<'a, T> Deref for Ref<'a, T> {
 
 #[class_unsafe(inherits_Obj)]
 pub struct Termx {
-    pub world: RefCell<World>,
+    pub world: RefCell<World<Termx>>,
     components: RefCell<Option<TermxComponents>>,
     systems: RefCell<Option<TermxSystems>>,
     #[virt]
@@ -55,7 +55,7 @@ pub struct Termx {
     #[virt]
     create_layout: fn() -> Rc<dyn IsLayout>,
     #[non_virt]
-    run: fn(root: Entity, screen: &mut dyn Screen) -> Result<(), Error>,
+    run: fn(root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error>,
 }
 
 impl Termx {
@@ -90,10 +90,10 @@ impl Termx {
     pub fn init_components_impl(this: &Rc<dyn IsTermx>) {
         let termx = this.termx();
         let mut world = termx.world.borrow_mut();
-        let view = Component::new::<View>(None, &mut world);
-        let view_layout = Component::new::<ViewLayout>(Some(view), &mut world);
-        let decorator = Component::new::<Decorator>(Some(view_layout), &mut world);
-        let background = Component::new::<Background>(Some(decorator), &mut world);
+        let view: Component<View, Termx> = Component::new_base(&mut world);
+        let view_layout: Component<ViewLayout, Termx> = Component::new(view, &mut world);
+        let decorator: Component<Decorator, Termx> = Component::new(view_layout, &mut world);
+        let background: Component<Background, Termx> = Component::new(decorator, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             view_layout,
@@ -134,7 +134,7 @@ impl Termx {
         )
     }
 
-    pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity, screen: &mut dyn Screen) -> Result<(), Error> {
+    pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error> {
         let termx = this.termx();
         loop {
             let screen_size = screen.size();

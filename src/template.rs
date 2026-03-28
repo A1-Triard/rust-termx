@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use basic_oop::obj::IsObj;
+use crate::termx::{Termx, IsTermx};
 use dyn_clone::{DynClone, clone_trait_object};
 use hashbrown::HashMap;
 use ooecs::Entity;
@@ -10,7 +10,7 @@ use print_no_std::eprintln;
 
 #[derive(Clone)]
 pub struct Names {
-    map: HashMap<String, Entity>,
+    map: HashMap<String, Entity<Termx>>,
 }
 
 impl Names {
@@ -18,20 +18,20 @@ impl Names {
         Names { map: HashMap::new() }
     }
 
-    fn register(&mut self, name: &str, obj: Entity) {
+    fn register(&mut self, name: &str, obj: Entity<Termx>) {
         if self.map.insert(name.to_string(), obj).is_some() {
             eprintln!("Warning: conflicting names ('{name}')");
         }
     }
 
-    pub fn find(&self, name: &str) -> Option<Entity> {
+    pub fn find(&self, name: &str) -> Option<Entity<Termx>> {
         self.map.get(name).copied()
     }
 }
 
 pub struct NameResolver {
     names: Names,
-    clients: Vec<(String, Box<dyn FnOnce(Entity)>, Option<Box<dyn FnOnce() -> Entity>>)>,
+    clients: Vec<(String, Box<dyn FnOnce(Entity<Termx>)>, Option<Box<dyn FnOnce() -> Entity<Termx>>>)>,
 }
 
 impl NameResolver {
@@ -42,7 +42,7 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve(&mut self, name: String, client: Box<dyn FnOnce(Entity)>) {
+    pub fn resolve(&mut self, name: String, client: Box<dyn FnOnce(Entity<Termx>)>) {
         if !name.is_empty() {
             self.clients.push((name, client, None));
         }
@@ -51,8 +51,8 @@ impl NameResolver {
     pub fn resolve_or_create(
         &mut self,
         name: String,
-        client: Box<dyn FnOnce(Entity)>,
-        create: Box<dyn FnOnce() -> Entity>,
+        client: Box<dyn FnOnce(Entity<Termx>)>,
+        create: Box<dyn FnOnce() -> Entity<Termx>>,
     ) {
         if !name.is_empty() {
             self.clients.push((name, client, Some(create)));
@@ -85,22 +85,26 @@ pub trait Template: DynClone {
         None
     }
 
-    fn create_entity(&self, world_owner: &Rc<dyn IsObj>) -> Entity;
+    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx>;
 
-    fn apply(&self, entity: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver);
+    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver);
 
-    fn load_content_inline(&self, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver) -> Entity {
-        let entity = self.create_entity(world_owner);
+    fn load_content_inline(
+        &self,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver
+    ) -> Entity<Termx> {
+        let entity = self.create_entity(termx);
         if let Some(name) = self.name() && !name.is_empty() {
             names.names.register(name, entity);
         }
-        self.apply(entity, world_owner, names);
+        self.apply(entity, termx, names);
         entity
     }
 
-    fn load_content(&self, world_owner: &Rc<dyn IsObj>) -> (Entity, Names) {
+    fn load_content(&self, termx: &Rc<dyn IsTermx>) -> (Entity<Termx>, Names) {
         let mut name_resolver = NameResolver::new();
-        let instance = self.load_content_inline(world_owner, &mut name_resolver);
+        let instance = self.load_content_inline(termx, &mut name_resolver);
         let names = name_resolver.finish();
         (instance, names)
     }

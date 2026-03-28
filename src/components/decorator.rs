@@ -2,11 +2,11 @@ use alloc::rc::Rc;
 use crate::property_ro;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
-use crate::termx::IsTermx;
+use crate::termx::{Termx, IsTermx};
 use ooecs::Entity;
 
 pub struct Decorator {
-    pub(crate) child: Option<Entity>,
+    pub(crate) child: Option<Entity<Termx>>,
 }
 
 impl Decorator {
@@ -14,9 +14,9 @@ impl Decorator {
         Decorator { child: None }
     }
 
-    property_ro!(Termx, decorator, child, Option<Entity>);
+    property_ro!(Termx, decorator, child, Option<Entity<Termx>>);
 
-    pub fn set_child(entity: Entity, termx: &Rc<dyn IsTermx>, value: Option<Entity>) {
+    pub fn set_child(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Option<Entity<Termx>>) {
         let termx = termx.termx();
         let component = termx.components().decorator;
         let mut world = termx.world.borrow_mut();
@@ -65,13 +65,10 @@ macro_rules! decorator_template {
 macro_rules! decorator_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
-        {
-            let world_owner: $crate::alloc_rc_Rc<dyn $crate::basic_oop_obj_IsObj> = ($termx).clone();
-            $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
-                $entity,
-                $termx,
-                Some(x.load_content_inline(&world_owner, $names))
-            ));
-        }
+        $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
+            $entity,
+            $termx,
+            Some(x.load_content_inline($termx, $names))
+        ));
     };
 }

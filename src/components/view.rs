@@ -1,11 +1,11 @@
 use alloc::string::String;
 use crate::property_rw;
-use crate::termx::IsTermx;
+use crate::termx::{Termx, IsTermx};
 use int_vec_2d::{Rect, Point, Vector};
 use ooecs::Entity;
 
 pub struct View {
-    pub(crate) visual_parent: Option<Entity>,
+    pub(crate) visual_parent: Option<Entity<Termx>>,
     pub(crate) real_render_bounds: Rect,
     tree: u16,
     render: u16,
@@ -29,7 +29,7 @@ impl View {
         }
     }
 
-    pub fn visual_parent(&self) -> Option<Entity> {
+    pub fn visual_parent(&self) -> Option<Entity<Termx>> {
         self.visual_parent
     }
 

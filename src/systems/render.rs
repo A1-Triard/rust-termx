@@ -10,39 +10,40 @@ use ooecs::Component;
 
 import! { pub render:
     use [obj basic_oop::obj];
+    use crate::termx::Termx;
     use ooecs::{Entity, World};
     use termx_screen_base::Screen;
 }
 
 #[class_unsafe(inherits_Obj)]
 pub struct Render {
-    pub view: Component,
-    pub decorator: Component,
-    pub background: Component,
+    pub view: Component<View, Termx>,
+    pub decorator: Component<Decorator, Termx>,
+    pub background: Component<Background, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
     #[virt]
-    visual_children_count: fn(entity: Entity, world: &World) -> usize,
+    visual_children_count: fn(entity: Entity<Termx>, world: &World<Termx>) -> usize,
     #[virt]
-    visual_child: fn(entity: Entity, world: &World, index: usize) -> Entity,
+    visual_child: fn(entity: Entity<Termx>, world: &World<Termx>, index: usize) -> Entity<Termx>,
     #[virt]
-    render_view: fn(entity: Entity, world: &World, rp: &mut RenderPort),
+    render_view: fn(entity: Entity<Termx>, world: &World<Termx>, rp: &mut RenderPort),
     #[non_virt]
-    add_visual_child: fn(parent: Entity, child: Entity, world: &mut World),
+    add_visual_child: fn(parent: Entity<Termx>, child: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
-    remove_visual_child: fn(parent: Entity, child: Entity, world: &mut World),
+    remove_visual_child: fn(parent: Entity<Termx>, child: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
-    invalidate_render: fn(entity: Entity, world: &World),
+    invalidate_render: fn(entity: Entity<Termx>, world: &World<Termx>),
     #[non_virt]
-    perform: fn(root: Entity, world: &World, screen: &mut dyn Screen) -> Option<Point>,
+    perform: fn(root: Entity<Termx>, world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
 impl Render {
     pub fn new(
-        view: Component,
-        decorator: Component,
-        background: Component,
+        view: Component<View, Termx>,
+        decorator: Component<Decorator, Termx>,
+        background: Component<Background, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
             view,
@@ -53,9 +54,9 @@ impl Render {
     }
 
     pub unsafe fn new_raw(
-        view: Component,
-        decorator: Component,
-        background: Component,
+        view: Component<View, Termx>,
+        decorator: Component<Decorator, Termx>,
+        background: Component<Background, Termx>,
         vtable: Vtable,
     ) -> Self {
         Render {
@@ -69,7 +70,11 @@ impl Render {
         }
     }
 
-    pub fn visual_children_count_impl(this: &Rc<dyn IsRender>, entity: Entity, world: &World) -> usize {
+    pub fn visual_children_count_impl(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &World<Termx>,
+    ) -> usize {
         let render = this.render();
         match entity.get::<View>(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
@@ -82,10 +87,10 @@ impl Render {
 
     pub fn visual_child_impl(
         this: &Rc<dyn IsRender>,
-        entity: Entity,
-        world: &World,
+        entity: Entity<Termx>,
+        world: &World<Termx>,
         index: usize,
-    ) -> Entity {
+    ) -> Entity<Termx> {
         let render = this.render();
         match entity.get::<View>(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
@@ -97,7 +102,12 @@ impl Render {
         }
     }
 
-    pub fn render_view_impl(this: &Rc<dyn IsRender>, entity: Entity, world: &World, rp: &mut RenderPort) {
+    pub fn render_view_impl(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &World<Termx>,
+        rp: &mut RenderPort
+    ) {
         let render = this.render();
         match entity.get::<View>(render.view, world).unwrap().render() {
             RENDER_BACKGROUND => {
@@ -108,7 +118,12 @@ impl Render {
         }
     }
 
-    pub fn add_visual_child_impl(this: &Rc<dyn IsRender>, parent: Entity, child: Entity, world: &mut World) {
+    pub fn add_visual_child_impl(
+        this: &Rc<dyn IsRender>,
+        parent: Entity<Termx>,
+        child: Entity<Termx>,
+        world: &mut World<Termx>,
+    ) {
         let render = this.render();
         child.get_mut::<View>(render.view, world).unwrap().visual_parent = Some(parent);
         this.invalidate_render(child, world);
@@ -116,9 +131,9 @@ impl Render {
 
     pub fn remove_visual_child_impl(
         this: &Rc<dyn IsRender>,
-        parent: Entity,
-        child: Entity,
-        world: &mut World
+        parent: Entity<Termx>,
+        child: Entity<Termx>,
+        world: &mut World<Termx>,
     ) {
         this.invalidate_render(child, world);
         let render = this.render();
@@ -127,14 +142,19 @@ impl Render {
         view.visual_parent = None;
     }
 
-    pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity, world: &World) {
+    pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
         let rect = entity.get::<View>(render.view, world).unwrap().real_render_bounds;
         let union = render.invalidated_rect.get().union_intersect(rect, render.screen_rect.get());
         render.invalidated_rect.set(union);
     }
 
-    fn render_entity(this: &Rc<dyn IsRender>, entity: Entity, world: &World, rp: &mut RenderPort) {
+    fn render_entity(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &World<Termx>,
+        rp: &mut RenderPort,
+    ) {
         if rp.invalidated_rect.intersect(rp.bounds).is_empty() {
             return;
         }
@@ -155,8 +175,8 @@ impl Render {
 
     pub fn perform_impl(
         this: &Rc<dyn IsRender>,
-        root: Entity,
-        world: &World,
+        root: Entity<Termx>,
+        world: &World<Termx>,
         screen: &mut dyn Screen,
     ) -> Option<Point> {
         let render = this.render();

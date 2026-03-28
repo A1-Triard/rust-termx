@@ -39,7 +39,7 @@ macro_rules! property_ro {
             }
 
             pub fn [< get_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get {
                 let xtermx = termx. [< $Termx:snake >] ();
@@ -57,7 +57,7 @@ macro_rules! property_rw {
     ($Termx:ident, $component:ident, $name:ident, $get_set:ty) => {
         $crate::paste_paste! {
             pub fn [< get_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
                 let xtermx = termx. [< $Termx:snake >] ();
@@ -68,7 +68,7 @@ macro_rules! property_rw {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
@@ -83,7 +83,7 @@ macro_rules! property_rw {
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty) => {
         $crate::paste_paste! {
             pub fn [< get_ $name >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce($get) -> T
             ) -> T {
@@ -95,7 +95,7 @@ macro_rules! property_rw {
             }
 
             pub fn [< get_ $name _mut >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
@@ -107,7 +107,7 @@ macro_rules! property_rw {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
@@ -130,7 +130,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
                 let xtermx = termx. [< $Termx:snake >] ();
@@ -141,7 +141,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
@@ -163,7 +163,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
                 let xtermx = termx. [< $Termx:snake >] ();
@@ -174,7 +174,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
@@ -196,7 +196,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
                 let xtermx = termx. [< $Termx:snake >] ();
@@ -207,7 +207,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
@@ -229,7 +229,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce($get) -> T
             ) -> T {
@@ -241,7 +241,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name _mut >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
@@ -257,7 +257,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
@@ -279,7 +279,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce($get) -> T
             ) -> T {
@@ -291,7 +291,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name _mut >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
@@ -307,7 +307,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
@@ -329,7 +329,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce($get) -> T
             ) -> T {
@@ -341,7 +341,7 @@ macro_rules! property {
             }
 
             pub fn [< get_ $name _mut >] <T> (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
@@ -357,7 +357,7 @@ macro_rules! property {
             }
 
             pub fn [< set_ $name >] (
-                entity: $crate::ooecs_Entity,
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
@@ -376,9 +376,7 @@ macro_rules! property {
 
 #[cfg(test)]
 mod tests {
-    use alloc::rc::Rc;
     use alloc::string::ToString;
-    use basic_oop::obj::IsObj;
     use crate::components::background::{Background, BackgroundTemplate};
     use crate::components::view_layout::ViewLayout;
     use crate::systems::layout::LayoutExt;
@@ -402,12 +400,11 @@ mod tests {
     #[test]
     fn create_background_with_template() {
         let termx = Termx::new();
-        let termx_as_obj: Rc<dyn IsObj> = termx.clone();
         let (bg, _) = BackgroundTemplate {
             pattern: Some("x".to_string()),
             width: Some(Some(20)),
             .. Default::default()
-        }.load_content(&termx_as_obj);
+        }.load_content(&termx);
         assert_eq!(&Background::get_pattern(bg, &termx, |x| x.to_string()), "x");
         assert_eq!(ViewLayout::get_width(bg, &termx), Some(20));
     }

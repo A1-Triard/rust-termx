@@ -1,13 +1,11 @@
 use alloc::string::{String, ToString};
 use alloc::rc::Rc;
-use basic_oop::obj::IsObj;
 use crate::components::decorator::Decorator;
 use crate::components::view::*;
 use crate::components::view_layout::*;
 use crate::property;
 use crate::template::{Template, NameResolver};
-use crate::termx::IsTermx;
-use dynamic_cast::dyn_cast_rc;
+use crate::termx::{IsTermx, Termx};
 use ooecs::Entity;
 use termx_screen_base::{Bg, Fg};
 
@@ -24,7 +22,7 @@ impl Background {
         }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity {
+    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view = termx.components().view;
         let view_layout = termx.components().view_layout;
@@ -98,14 +96,12 @@ impl Template for BackgroundTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, world_owner: &Rc<dyn IsObj>) -> Entity {
-        let termx: Rc<dyn IsTermx> = dyn_cast_rc(world_owner.clone()).unwrap();
-        Background::new_entity(&termx)
+    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        Background::new_entity(termx)
     }
 
-    fn apply(&self, entity: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver) {
-        let termx: Rc<dyn IsTermx> = dyn_cast_rc(world_owner.clone()).unwrap();
+    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
         let this = self;
-        background_apply_template! { this, entity, &termx, names }
+        background_apply_template! { this, entity, termx, names }
     }
 }

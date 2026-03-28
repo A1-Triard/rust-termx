@@ -2,6 +2,7 @@ use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cmp::min;
 use crate::base::{ViewHAlign, ViewVAlign};
+use crate::components::background::Background;
 use crate::components::decorator::Decorator;
 use crate::components::view_layout::*;
 use crate::components::view::View;
@@ -12,6 +13,7 @@ use ooecs::Component;
 
 import! { pub layout:
     use [obj basic_oop::obj];
+    use crate::termx::Termx;
     use int_vec_2d::{Vector, Rect};
     use ooecs::{Entity, World};
 }
@@ -19,33 +21,38 @@ import! { pub layout:
 #[class_unsafe(inherits_Obj)]
 pub struct Layout {
     pub termx: rc::Weak<dyn IsTermx>,
-    pub view_layout: Component,
-    pub view: Component,
-    pub background: Component,
-    pub decorator: Component,
+    pub view_layout: Component<ViewLayout, Termx>,
+    pub view: Component<View, Termx>,
+    pub background: Component<Background, Termx>,
+    pub decorator: Component<Decorator, Termx>,
     #[virt]
-    measure_override: fn(entity: Entity, world: &mut World, w: Option<i16>, h: Option<i16>) -> Vector,
+    measure_override: fn(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        w: Option<i16>,
+        h: Option<i16>
+    ) -> Vector,
     #[virt]
-    arrange_override: fn(entity: Entity, world: &mut World, inner_bounds: Rect) -> Vector,
+    arrange_override: fn(entity: Entity<Termx>, world: &mut World<Termx>, inner_bounds: Rect) -> Vector,
     #[non_virt]
-    invalidate_measure: fn(entity: Entity, world: &mut World),
+    invalidate_measure: fn(entity: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
-    invalidate_arrange: fn(entity: Entity, world: &mut World),
+    invalidate_arrange: fn(entity: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
-    measure: fn(entity: Entity, world: &mut World, w: Option<i16>, h: Option<i16>),
+    measure: fn(entity: Entity<Termx>, world: &mut World<Termx>, w: Option<i16>, h: Option<i16>),
     #[non_virt]
-    arrange: fn(entity: Entity, world: &mut World, bounds: Rect),
+    arrange: fn(entity: Entity<Termx>, world: &mut World<Termx>, bounds: Rect),
     #[non_virt]
-    perform: fn(root: Entity, world: &mut World, size: Vector),
+    perform: fn(root: Entity<Termx>, world: &mut World<Termx>, size: Vector),
 }
 
 impl Layout {
     pub fn new(
         termx: &Rc<dyn IsTermx>,
-        view_layout: Component,
-        view: Component,
-        background: Component,
-        decorator: Component,
+        view_layout: Component<ViewLayout, Termx>,
+        view: Component<View, Termx>,
+        background: Component<Background, Termx>,
+        decorator: Component<Decorator, Termx>,
     ) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(
             termx,
@@ -59,10 +66,10 @@ impl Layout {
 
     pub unsafe fn new_raw(
         termx: &Rc<dyn IsTermx>,
-        view_layout: Component,
-        view: Component,
-        background: Component,
-        decorator: Component,
+        view_layout: Component<ViewLayout, Termx>,
+        view: Component<View, Termx>,
+        background: Component<Background, Termx>,
+        decorator: Component<Decorator, Termx>,
         vtable: Vtable,
     ) -> Self {
         Layout {
@@ -77,10 +84,10 @@ impl Layout {
 
     pub fn measure_override_impl(
         this: &Rc<dyn IsLayout>,
-        entity: Entity,
-        world: &mut World,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
         w: Option<i16>,
-        h: Option<i16>
+        h: Option<i16>,
     ) -> Vector {
         let layout = this.layout();
         match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout() {
@@ -99,8 +106,8 @@ impl Layout {
 
     pub fn arrange_override_impl(
         this: &Rc<dyn IsLayout>,
-        entity: Entity,
-        world: &mut World,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
         inner_bounds: Rect,
     ) -> Vector {
         let layout = this.layout();
@@ -118,7 +125,11 @@ impl Layout {
         }
     }
 
-    pub fn invalidate_measure_impl(this: &Rc<dyn IsLayout>, mut entity: Entity, world: &mut World) {
+    pub fn invalidate_measure_impl(
+        this: &Rc<dyn IsLayout>,
+        mut entity: Entity<Termx>,
+        world: &mut World<Termx>,
+    ) {
         let layout = this.layout();
         loop {
             {
@@ -132,7 +143,11 @@ impl Layout {
         }
     }
 
-    pub fn invalidate_arrange_impl(this: &Rc<dyn IsLayout>, mut entity: Entity, world: &mut World) {
+    pub fn invalidate_arrange_impl(
+        this: &Rc<dyn IsLayout>,
+        mut entity: Entity<Termx>,
+        world: &mut World<Termx>,
+    ) {
         let layout = this.layout();
         loop {
             {
@@ -147,8 +162,8 @@ impl Layout {
 
     pub fn measure_impl(
         this: &Rc<dyn IsLayout>,
-        entity: Entity,
-        world: &mut World,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
         w: Option<i16>,
         h: Option<i16>,
     ) {
@@ -187,8 +202,8 @@ impl Layout {
 
     pub fn arrange_impl(
         this: &Rc<dyn IsLayout>,
-        entity: Entity,
-        world: &mut World,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
         bounds: Rect,
     ) {
         let (a_size, max_size, min_size) = {
@@ -253,7 +268,7 @@ impl Layout {
         termx.termx().systems().render.invalidate_render(entity, world);
     }
 
-    pub fn perform_impl(this: &Rc<dyn IsLayout>, root: Entity, world: &mut World, size: Vector) {
+    pub fn perform_impl(this: &Rc<dyn IsLayout>, root: Entity<Termx>, world: &mut World<Termx>, size: Vector) {
         this.measure(root, world, Some(size.x), Some(size.y));
         this.arrange(root, world, Rect { tl: Point { x: 0, y: 0 }, size });
     }
