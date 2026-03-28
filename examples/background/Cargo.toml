@@ -7,5 +7,6 @@ publish = false
 [workspace]
 
 [dependencies]
+basic-oop = "0.8.3"
 termx = { path = "../.." }
 termx-screen-ncurses = { path = "../../screen-ncurses" }
