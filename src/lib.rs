@@ -290,19 +290,21 @@ macro_rules! property {
 
 #[cfg(test)]
 mod tests {
+    use crate::components::background::Background;
     use crate::systems::layout::LayoutExt;
-    use crate::termx::{Termx, TermxExt};
+    use crate::termx::Termx;
     use int_vec_2d::Vector;
 
     #[test]
     fn create_view_perform_layout_change_property() {
         let termx = Termx::new();
-        let bg = termx.new_background();
+        let bg = Background::new_entity(&termx);
         {
             let termx = termx.termx();
             let mut world = termx.world.borrow_mut();
             termx.systems().layout.perform(bg, &mut world, Vector { x: 80, y: 25 });
         }
-        termx.set_background_pattern(bg, "x".to_string());
+        Background::set_pattern(bg, &termx, "x".to_string());
+        assert_eq!(&Background::get_pattern(bg, &termx, |x| x.to_string()), "x");
     }
 }
