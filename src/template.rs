@@ -5,11 +5,12 @@ use alloc::vec::Vec;
 use basic_oop::obj::IsObj;
 use dyn_clone::{DynClone, clone_trait_object};
 use hashbrown::HashMap;
+use ooecs::Entity;
 use print_no_std::eprintln;
 
 #[derive(Clone)]
 pub struct Names {
-    map: HashMap<String, Rc<dyn IsObj>>,
+    map: HashMap<String, Entity>,
 }
 
 impl Names {
@@ -17,20 +18,20 @@ impl Names {
         Names { map: HashMap::new() }
     }
 
-    fn register(&mut self, name: &str, obj: Rc<dyn IsObj>) {
+    fn register(&mut self, name: &str, obj: Entity) {
         if self.map.insert(name.to_string(), obj).is_some() {
             eprintln!("Warning: conflicting names ('{name}')");
         }
     }
 
-    pub fn find(&self, name: &str) -> Option<&Rc<dyn IsObj>> {
-        self.map.get(name)
+    pub fn find(&self, name: &str) -> Option<Entity> {
+        self.map.get(name).copied()
     }
 }
 
 pub struct NameResolver {
     names: Names,
-    clients: Vec<(String, Box<dyn FnOnce(Rc<dyn IsObj>)>, Option<Box<dyn FnOnce() -> Rc<dyn IsObj>>>)>,
+    clients: Vec<(String, Box<dyn FnOnce(Entity)>, Option<Box<dyn FnOnce() -> Entity>>)>,
 }
 
 impl NameResolver {
@@ -41,7 +42,7 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve(&mut self, name: String, client: Box<dyn FnOnce(Rc<dyn IsObj>)>) {
+    pub fn resolve(&mut self, name: String, client: Box<dyn FnOnce(Entity)>) {
         if !name.is_empty() {
             self.clients.push((name, client, None));
         }
@@ -50,8 +51,8 @@ impl NameResolver {
     pub fn resolve_or_create(
         &mut self,
         name: String,
-        client: Box<dyn FnOnce(Rc<dyn IsObj>)>,
-        create: Box<dyn FnOnce() -> Rc<dyn IsObj>>,
+        client: Box<dyn FnOnce(Entity)>,
+        create: Box<dyn FnOnce() -> Entity>,
     ) {
         if !name.is_empty() {
             self.clients.push((name, client, Some(create)));
@@ -60,12 +61,12 @@ impl NameResolver {
 
     fn finish(mut self) -> Names {
         for (name, client, factory) in self.clients {
-            let named_obj = if let Some(named_obj) = self.names.map.get(&name) {
-                named_obj.clone()
+            let named_obj = if let Some(&named_obj) = self.names.map.get(&name) {
+                named_obj
             } else {
                 if let Some(factory) = factory {
                     let named_obj = factory();
-                    self.names.register(&name, named_obj.clone());
+                    self.names.register(&name, named_obj);
                     named_obj
                 } else {
                     eprintln!("Warning: name not found ('{name}')");
@@ -88,25 +89,25 @@ pub trait Template: DynClone {
         None
     }
 
-    fn create_instance(&self) -> Rc<dyn IsObj>;
+    fn create_instance(&self, world_owner: &Rc<dyn IsObj>) -> Entity;
 
-    fn apply(&self, instance: &Rc<dyn IsObj>, names: &mut NameResolver);
+    fn apply(&self, instance: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver);
 
-    fn load_content(&self, names: &mut NameResolver) -> Rc<dyn IsObj> {
+    fn load_content(&self, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver) -> Entity {
         let mut local_names = if self.is_name_scope() { Some(NameResolver::new()) } else { None };
         let names = local_names.as_mut().unwrap_or(names);
-        let instance = self.create_instance();
+        let instance = self.create_instance(world_owner);
         if let Some(name) = self.name() && !name.is_empty() {
-            names.names.register(name, instance.clone());
+            names.names.register(name, instance);
         }
-        self.apply(&instance, names);
+        self.apply(instance, world_owner, names);
         local_names.map(|x| x.finish());
         instance
     }
 
-    fn load_root(&self) -> (Rc<dyn IsObj>, Names) {
+    fn load_root(&self, world_owner: &Rc<dyn IsObj>) -> (Entity, Names) {
         let mut name_resolver = NameResolver::new();
-        let root = self.load_content(&mut name_resolver);
+        let root = self.load_content(world_owner, &mut name_resolver);
         let names = name_resolver.finish();
         (root, names)
     }

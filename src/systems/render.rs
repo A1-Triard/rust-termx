@@ -71,7 +71,7 @@ impl Render {
 
     pub fn visual_children_count_impl(this: &Rc<dyn IsRender>, entity: Entity, world: &World) -> usize {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().tree {
+        match entity.get::<View>(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
                 let decorator = entity.get::<Decorator>(render.decorator, world).unwrap();
                 if decorator.child.is_some() { 1 } else { 0 }
@@ -87,7 +87,7 @@ impl Render {
         index: usize,
     ) -> Entity {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().tree {
+        match entity.get::<View>(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
                 let decorator = entity.get::<Decorator>(render.decorator, world).unwrap();
                 assert_eq!(index, 0);
@@ -99,7 +99,7 @@ impl Render {
 
     pub fn render_view_impl(this: &Rc<dyn IsRender>, entity: Entity, world: &World, rp: &mut RenderPort) {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().render {
+        match entity.get::<View>(render.view, world).unwrap().render() {
             RENDER_BACKGROUND => {
                 let background = entity.get::<Background>(render.background, world).unwrap();
                 rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
