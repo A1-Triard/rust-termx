@@ -82,7 +82,7 @@ impl Layout {
         h: Option<i16>
     ) -> Vector {
         let layout = this.layout();
-        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout {
+        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout() {
             LAYOUT_BACKGROUND => {
                 let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
                 if let Some(child) = child {
@@ -103,7 +103,7 @@ impl Layout {
         inner_bounds: Rect,
     ) -> Vector {
         let layout = this.layout();
-        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout {
+        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout() {
             LAYOUT_BACKGROUND => {
                 let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
                 if let Some(child) = child {
@@ -155,19 +155,19 @@ impl Layout {
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
             if component.measure_size == Some((w, h)) { return; }
-            let max_width = component.width.or(component.max_width);
-            let max_height = component.height.or(component.max_height);
+            let max_width = component.width().or(component.max_width());
+            let max_height = component.height().or(component.max_height());
             let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
             let min_size = Vector {
-                x: component.width.unwrap_or(component.min_size.x),
-                y: component.height.unwrap_or(component.min_size.y),
+                x: component.width().unwrap_or(component.min_size().x),
+                y: component.height().unwrap_or(component.min_size().y),
             };
-            let g_w = if component.h_align.is_some() { None } else { w };
-            let g_h = if component.v_align.is_some() { None } else { h };
+            let g_w = if component.h_align().is_some() { None } else { w };
+            let g_h = if component.v_align().is_some() { None } else { h };
             let g_w = g_w.or(max_width);
             let g_h = g_h.or(max_height);
             let a = Vector { x: g_w.unwrap_or(0), y: g_h.unwrap_or(0) };
-            let a = component.margin.shrink_rect_size(a);
+            let a = component.margin().shrink_rect_size(a);
             let a = a.min(max_size).max(min_size);
             (g_w.map(|_| a.x), g_h.map(|_| a.y), max_size, min_size)
         };
@@ -175,7 +175,7 @@ impl Layout {
         let layout = this.layout();
         let component = entity.get_mut::<ViewLayout>(layout.view_layout, world).unwrap();
         let desired_size = desired_size.min(max_size).max(min_size);
-        let desired_size = component.margin.expand_rect_size(desired_size);
+        let desired_size = component.margin().expand_rect_size(desired_size);
         let desired_size = Vector {
             x: w.map_or(desired_size.x, |w| min(w as u16, desired_size.x as u16) as i16),
             y: h.map_or(desired_size.y, |h| min(h as u16, desired_size.y as u16) as i16),
@@ -193,19 +193,19 @@ impl Layout {
         let (a_size, max_size, min_size) = {
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
-            let max_width = component.width.or(component.max_width);
-            let max_height = component.height.or(component.max_height);
+            let max_width = component.width().or(component.max_width());
+            let max_height = component.height().or(component.max_height());
             let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
             let min_size = Vector {
-                x: component.width.unwrap_or(component.min_size.x),
-                y: component.height.unwrap_or(component.min_size.y),
+                x: component.width().unwrap_or(component.min_size().x),
+                y: component.height().unwrap_or(component.min_size().y),
             };
             if Some(bounds.size) == component.arrange_size {
                 (None, max_size, min_size)
             } else {
-                let a_size = component.margin.shrink_rect_size(bounds.size).min(max_size).max(min_size);
-                let d_size = component.margin.shrink_rect_size(component.desired_size);
-                (Some((a_size, component.h_align, component.v_align, d_size)), max_size, min_size)
+                let a_size = component.margin().shrink_rect_size(bounds.size).min(max_size).max(min_size);
+                let d_size = component.margin().shrink_rect_size(component.desired_size);
+                (Some((a_size, component.h_align(), component.v_align(), d_size)), max_size, min_size)
             }
         };
         let render_size = if let Some((a_size, h_align, v_align, desired_size)) = a_size {
@@ -218,7 +218,7 @@ impl Layout {
             );
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
-            component.margin.expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
+            component.margin().expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
         } else {
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
@@ -227,11 +227,11 @@ impl Layout {
         let (render_bounds, real_render_bounds) = {
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
-            let h_align = component.h_align.unwrap_or(HAlign::Left);
-            let v_align = component.v_align.unwrap_or(VAlign::Top);
+            let h_align = component.h_align().unwrap_or(HAlign::Left);
+            let v_align = component.v_align().unwrap_or(VAlign::Top);
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
             let render_bounds = align.shrink_rect(bounds);
-            let real_render_bounds = component.margin.shrink_rect(render_bounds);
+            let real_render_bounds = component.margin().shrink_rect(render_bounds);
             (render_bounds, real_render_bounds)
         };
         let layout = this.layout();
