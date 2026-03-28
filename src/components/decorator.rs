@@ -51,7 +51,7 @@ macro_rules! decorator_template {
 
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
-                pub child: Option<Box<dyn $crate::template::Template>>,
+                pub child: Option<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -63,12 +63,15 @@ macro_rules! decorator_template {
 
 #[macro_export]
 macro_rules! decorator_apply_template {
-    ($this:ident, $entity:ident, $termx:ident, $names:ident) => {
+    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
-        $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
-            $entity,
-            $termx,
-            Some(x.load_content_inline($termx, $names))
-        ));
+        {
+            let world_owner: $crate::alloc_rc_Rc<dyn $crate::basic_oop_obj_IsObj> = ($termx).clone();
+            $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
+                $entity,
+                $termx,
+                Some(x.load_content_inline(&world_owner, $names))
+            ));
+        }
     };
 }

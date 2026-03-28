@@ -135,11 +135,11 @@ macro_rules! view_layout_template {
         $crate::view_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
-                $(use $path as $import;)*
-                use $crate::components::view::layout::serialize_optional_i16
+                use $crate::components::view_layout::serialize_optional_i16
                     as termx_components_view_layout_serialize_optional_i16;
-                use $crate::components::view::layout::deserialize_optional_i16
+                use $crate::components::view_layout::deserialize_optional_i16
                     as termx_components_view_layout_deserialize_optional_i16;
+                $(use $path as $import;)*
 
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
@@ -184,15 +184,17 @@ macro_rules! view_layout_template {
 
 #[macro_export]
 macro_rules! view_layout_apply_template {
-    ($this:ident, $entity:ident, $termx:ident, $names:ident) => {
+    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::view_apply_template! { $this, $entity, $termx, $names }
-        $this.width.map(|x| $crate::components::view::View::set_width($entity, $termx, x));
-        $this.height.map(|x| $crate::components::view::View::set_height($entity, $termx, x));
-        $this.min_size.map(|x| $crate::components::view::View::set_min_size($entity, $termx, x));
-        $this.max_width.map(|x| $crate::components::view::View::set_max_width($entity, $termx, x));
-        $this.max_height.map(|x| $crate::components::view::View::set_max_height($entity, $termx, x));
-        $this.h_align.map(|x| $crate::components::view::View::set_h_align($entity, $termx, x));
-        $this.v_align.map(|x| $crate::components::view::View::set_v_align($entity, $termx, x));
-        $this.margin.map(|x| $crate::components::view::View::set_margin($entity, $termx, x)); 
+        $this.width.map(|x| $crate::components::view_layout::ViewLayout::set_width($entity, $termx, x));
+        $this.height.map(|x| $crate::components::view_layout::ViewLayout::set_height($entity, $termx, x));
+        $this.min_size.map(|x| $crate::components::view_layout::ViewLayout::set_min_size($entity, $termx, x));
+        $this.max_width.map(|x| $crate::components::view_layout::ViewLayout::set_max_width($entity, $termx, x));
+        $this.max_height.map(|x|
+            $crate::components::view_layout::ViewLayout::set_max_height($entity, $termx, x)
+        );
+        $this.h_align.map(|x| $crate::components::view_layout::ViewLayout::set_h_align($entity, $termx, x));
+        $this.v_align.map(|x| $crate::components::view_layout::ViewLayout::set_v_align($entity, $termx, x));
+        $this.margin.map(|x| $crate::components::view_layout::ViewLayout::set_margin($entity, $termx, x)); 
     };
 }

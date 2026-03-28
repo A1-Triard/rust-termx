@@ -44,6 +44,11 @@ impl View {
     property_rw!(Termx, view, name, ref String as &str);
 }
 
+#[doc(hidden)]
+pub fn string_is_empty(x: &String) -> bool {
+    x.is_empty()
+}
+
 #[macro_export]
 macro_rules! view_template {
     (
@@ -59,11 +64,12 @@ macro_rules! view_template {
         $crate::template! {
             $(#[$attr])*
             $vis struct $name in $mod {
+                use $crate::components::view::string_is_empty as components_view_string_is_empty;
                 $(use $path as $import;)*
 
                 #[serde(default)]
-                #[serde(skip_serializing_if="String::is_empty")]
-                pub name: String,
+                #[serde(skip_serializing_if="components_view_string_is_empty")]
+                pub name: $crate::alloc_string_String,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -75,7 +81,7 @@ macro_rules! view_template {
 
 #[macro_export]
 macro_rules! view_apply_template {
-    ($this:ident, $entity:ident, $termx:ident, $names:ident) => {
-        $crate::components::view::View::set_name($entity, $termx, $this.name);
+    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
+        $crate::components::view::View::set_name($entity, $termx, $this.name.clone());
     };
 }

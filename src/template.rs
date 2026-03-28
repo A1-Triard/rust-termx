@@ -85,17 +85,17 @@ pub trait Template: DynClone {
         None
     }
 
-    fn create_instance(&self, world_owner: &Rc<dyn IsObj>) -> Entity;
+    fn create_entity(&self, world_owner: &Rc<dyn IsObj>) -> Entity;
 
-    fn apply(&self, instance: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver);
+    fn apply(&self, entity: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver);
 
     fn load_content_inline(&self, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver) -> Entity {
-        let instance = self.create_instance(world_owner);
+        let entity = self.create_entity(world_owner);
         if let Some(name) = self.name() && !name.is_empty() {
-            names.names.register(name, instance);
+            names.names.register(name, entity);
         }
-        self.apply(instance, world_owner, names);
-        instance
+        self.apply(entity, world_owner, names);
+        entity
     }
 
     fn load_content(&self, world_owner: &Rc<dyn IsObj>) -> (Entity, Names) {
