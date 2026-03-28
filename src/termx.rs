@@ -1,8 +1,8 @@
 use basic_oop::{Vtable, import, class_unsafe};
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
-use crate::components::view::View;
-use crate::components::view_layout::ViewLayout;
+use crate::components::view::*;
+use crate::components::view_layout::*;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use ooecs::{Component, World};
@@ -257,8 +257,8 @@ impl Termx {
         let background = termx.components().background;
         let mut world = termx.world.borrow_mut();
         let bg = Entity::new(background, &mut world);
-        bg.add(view, &mut world, View::new(View::BACKGROUND));
-        bg.add(view_layout, &mut world, ViewLayout::new());
+        bg.add(view, &mut world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
+        bg.add(view_layout, &mut world, ViewLayout::new(LAYOUT_BACKGROUND));
         bg.add(decorator, &mut world, Decorator::new());
         bg.add(background, &mut world, Background::new());
         bg

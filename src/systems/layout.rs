@@ -1,7 +1,6 @@
 use basic_oop::{Vtable, import, class_unsafe};
-use crate::components::background::Background;
 use crate::components::decorator::Decorator;
-use crate::components::view_layout::ViewLayout;
+use crate::components::view_layout::*;
 use crate::components::view::View;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
@@ -83,16 +82,18 @@ impl Layout {
         h: Option<i16>
     ) -> Vector {
         let layout = this.layout();
-        if entity.get::<Background>(layout.background, world).is_some() {
-            let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
-            return if let Some(child) = child {
-                this.measure(child, world, w, h);
-                child.get::<ViewLayout>(layout.view_layout, world).unwrap().desired_size
-            } else {
-                Vector::null()
-            };
+        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout {
+            LAYOUT_BACKGROUND => {
+                let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
+                if let Some(child) = child {
+                    this.measure(child, world, w, h);
+                    child.get::<ViewLayout>(layout.view_layout, world).unwrap().desired_size
+                } else {
+                    Vector::null()
+                }
+            },
+            _ => Vector::null()
         }
-        Vector::null()
     }
 
     pub fn arrange_override_impl(
@@ -102,16 +103,18 @@ impl Layout {
         inner_bounds: Rect,
     ) -> Vector {
         let layout = this.layout();
-        if entity.get::<Background>(layout.background, world).is_some() {
-            let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
-            return if let Some(child) = child {
-                this.arrange(child, world, inner_bounds);
-                child.get::<ViewLayout>(layout.view_layout, world).unwrap().render_bounds.size
-            } else {
-                inner_bounds.size
-            };
+        match entity.get::<ViewLayout>(layout.view_layout, world).unwrap().layout {
+            LAYOUT_BACKGROUND => {
+                let child = entity.get::<Decorator>(layout.decorator, world).unwrap().child;
+                if let Some(child) = child {
+                    this.arrange(child, world, inner_bounds);
+                    child.get::<ViewLayout>(layout.view_layout, world).unwrap().render_bounds.size
+                } else {
+                    inner_bounds.size
+                }
+            },
+            _ => Vector::null()
         }
-        Vector::null()
     }
 
     pub fn invalidate_measure_impl(this: &Rc<dyn IsLayout>, mut entity: Entity, world: &mut World) {

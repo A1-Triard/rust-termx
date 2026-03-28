@@ -1,6 +1,7 @@
 use int_vec_2d::{HAlign, VAlign, Thickness, Rect, Vector, Point};
 
 pub struct ViewLayout {
+    pub(crate) layout: u16,
     pub(crate) measure_size: Option<(Option<i16>, Option<i16>)>,
     pub(crate) desired_size: Vector,
     pub(crate) arrange_size: Option<Vector>,
@@ -15,9 +16,13 @@ pub struct ViewLayout {
     pub(crate) v_align: Option<VAlign>,
 }
 
+pub const LAYOUT_NONE: u16 = 0;
+pub const LAYOUT_BACKGROUND: u16 = 1;
+
 impl ViewLayout {
-    pub fn new() -> Self {
+    pub fn new(layout: u16) -> Self {
         ViewLayout {
+            layout,
             measure_size: None,
             desired_size: Vector::null(),
             arrange_size: None,
@@ -31,6 +36,10 @@ impl ViewLayout {
             h_align: None,
             v_align: None,
         }
+    }
+
+    pub fn layout(&self) -> u16 {
+        self.layout
     }
 
     pub fn desired_size(&self) -> Vector {

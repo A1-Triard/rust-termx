@@ -4,20 +4,23 @@ use ooecs::Entity;
 pub struct View {
     pub(crate) visual_parent: Option<Entity>,
     pub(crate) real_render_bounds: Rect,
-    pub(crate) ty: u16,
+    pub(crate) tree: u16,
+    pub(crate) render: u16,
 }
 
+pub const TREE_NONE: u16 = 0;
+pub const TREE_DECORATOR: u16 = 1;
+
+pub const RENDER_NONE: u16 = 0;
+pub const RENDER_BACKGROUND: u16 = 1;
 
 impl View {
-    pub const NONE: u16 = 0;
-    pub const DECORATOR: u16 = 1;
-    pub const BACKGROUND: u16 = 2;
-
-    pub fn new(ty: u16) -> Self {
+    pub fn new(tree: u16, render: u16) -> Self {
         View {
             visual_parent: None,
             real_render_bounds: Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() },
-            ty,
+            tree,
+            render,
         }
     }
 
@@ -25,7 +28,11 @@ impl View {
         self.visual_parent
     }
 
-    pub fn ty(&self) -> u16 {
-        self.ty
+    pub fn tree(&self) -> u16 {
+        self.tree
+    }
+
+    pub fn render(&self) -> u16 {
+        self.render
     }
 }
