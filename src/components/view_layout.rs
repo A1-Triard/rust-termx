@@ -1,6 +1,7 @@
+use crate::base::{ViewHAlign, ViewVAlign};
 use crate::property;
 use crate::termx::IsTermx;
-use int_vec_2d::{HAlign, VAlign, Thickness, Rect, Vector, Point};
+use int_vec_2d::{Thickness, Rect, Vector, Point};
 
 pub struct ViewLayout {
     layout: u16,
@@ -14,8 +15,8 @@ pub struct ViewLayout {
     width: Option<i16>,
     height: Option<i16>,
     margin: Thickness,
-    h_align: Option<HAlign>,
-    v_align: Option<VAlign>,
+    h_align: ViewHAlign,
+    v_align: ViewVAlign,
 }
 
 pub const LAYOUT_NONE: u16 = 0;
@@ -35,8 +36,8 @@ impl ViewLayout {
             width: None,
             height: None,
             margin: Thickness::all(0),
-            h_align: None,
-            v_align: None,
+            h_align: ViewHAlign::Stretch,
+            v_align: ViewVAlign::Stretch,
         }
     }
 
@@ -58,6 +59,6 @@ impl ViewLayout {
     property!(Termx, view_layout, width, Option<i16>, @measure);
     property!(Termx, view_layout, height, Option<i16>, @measure);
     property!(Termx, view_layout, margin, Thickness, @measure);
-    property!(Termx, view_layout, h_align, Option<HAlign>, @measure);
-    property!(Termx, view_layout, v_align, Option<VAlign>, @measure);
+    property!(Termx, view_layout, h_align, ViewHAlign, @measure);
+    property!(Termx, view_layout, v_align, ViewVAlign, @measure);
 }

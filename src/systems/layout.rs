@@ -1,6 +1,7 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cmp::min;
+use crate::base::{ViewHAlign, ViewVAlign};
 use crate::components::decorator::Decorator;
 use crate::components::view_layout::*;
 use crate::components::view::View;
@@ -162,8 +163,8 @@ impl Layout {
                 x: component.width().unwrap_or(component.min_size().x),
                 y: component.height().unwrap_or(component.min_size().y),
             };
-            let g_w = if component.h_align().is_some() { None } else { w };
-            let g_h = if component.v_align().is_some() { None } else { h };
+            let g_w = if component.h_align() != ViewHAlign::Stretch { None } else { w };
+            let g_h = if component.v_align() != ViewVAlign::Stretch { None } else { h };
             let g_w = g_w.or(max_width);
             let g_h = g_h.or(max_height);
             let a = Vector { x: g_w.unwrap_or(0), y: g_h.unwrap_or(0) };
@@ -210,8 +211,8 @@ impl Layout {
         };
         let render_size = if let Some((a_size, h_align, v_align, desired_size)) = a_size {
             let a_size = Vector {
-                x: if h_align.is_none() { a_size.x } else { desired_size.x },
-                y: if v_align.is_none() { a_size.y } else { desired_size.y }
+                x: if h_align == ViewHAlign::Stretch { a_size.x } else { desired_size.x },
+                y: if v_align == ViewVAlign::Stretch { a_size.y } else { desired_size.y }
             };
             let render_size = this.arrange_override(
                 entity, world, Rect { tl: Point { x: 0, y: 0 }, size: a_size }
@@ -227,8 +228,8 @@ impl Layout {
         let (render_bounds, real_render_bounds) = {
             let layout = this.layout();
             let component = entity.get::<ViewLayout>(layout.view_layout, world).unwrap();
-            let h_align = component.h_align().unwrap_or(HAlign::Left);
-            let v_align = component.v_align().unwrap_or(VAlign::Top);
+            let h_align = <Option<HAlign>>::from(component.h_align()).unwrap_or(HAlign::Left);
+            let v_align = <Option<VAlign>>::from(component.v_align()).unwrap_or(VAlign::Top);
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
             let render_bounds = align.shrink_rect(bounds);
             let real_render_bounds = component.margin().shrink_rect(render_bounds);

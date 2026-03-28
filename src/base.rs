@@ -70,3 +70,55 @@ impl From<TextAlign> for Option<HAlign> {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize)]
+pub enum ViewHAlign { Left, Center, Right, Stretch }
+
+impl From<ViewHAlign> for Option<HAlign> {
+    fn from(a: ViewHAlign) -> Option<HAlign> {
+        match a {
+            ViewHAlign::Left => Some(HAlign::Left),
+            ViewHAlign::Center => Some(HAlign::Center),
+            ViewHAlign::Right => Some(HAlign::Right),
+            ViewHAlign::Stretch => None,
+        }
+    }
+}
+
+impl From<Option<HAlign>> for ViewHAlign {
+    fn from(a: Option<HAlign>) -> ViewHAlign {
+        match a {
+            Some(HAlign::Left) => ViewHAlign::Left,
+            Some(HAlign::Center) => ViewHAlign::Center,
+            Some(HAlign::Right) => ViewHAlign::Right,
+            None => ViewHAlign::Stretch,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize)]
+pub enum ViewVAlign { Top, Center, Bottom, Stretch }
+
+impl From<ViewVAlign> for Option<VAlign> {
+    fn from(a: ViewVAlign) -> Option<VAlign> {
+        match a {
+            ViewVAlign::Top => Some(VAlign::Top),
+            ViewVAlign::Center => Some(VAlign::Center),
+            ViewVAlign::Bottom => Some(VAlign::Bottom),
+            ViewVAlign::Stretch => None,
+        }
+    }
+}
+
+impl From<Option<VAlign>> for ViewVAlign {
+    fn from(a: Option<VAlign>) -> ViewVAlign {
+        match a {
+            Some(VAlign::Top) => ViewVAlign::Top,
+            Some(VAlign::Center) => ViewVAlign::Center,
+            Some(VAlign::Bottom) => ViewVAlign::Bottom,
+            None => ViewVAlign::Stretch,
+        }
+    }
+}

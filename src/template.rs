@@ -81,10 +81,6 @@ impl NameResolver {
 
 #[typetag::serde]
 pub trait Template: DynClone {
-    fn is_name_scope(&self) -> bool {
-        false
-    }
-
     fn name(&self) -> Option<&String> {
         None
     }
@@ -93,23 +89,15 @@ pub trait Template: DynClone {
 
     fn apply(&self, instance: Entity, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver);
 
-    fn load_content(&self, world_owner: &Rc<dyn IsObj>, names: &mut NameResolver) -> Entity {
-        let mut local_names = if self.is_name_scope() { Some(NameResolver::new()) } else { None };
-        let names = local_names.as_mut().unwrap_or(names);
+    fn load_content(&self, world_owner: &Rc<dyn IsObj>) -> (Entity, Names) {
+        let mut name_resolver = NameResolver::new();
         let instance = self.create_instance(world_owner);
         if let Some(name) = self.name() && !name.is_empty() {
-            names.names.register(name, instance);
+            name_resolver.names.register(name, instance);
         }
-        self.apply(instance, world_owner, names);
-        local_names.map(|x| x.finish());
-        instance
-    }
-
-    fn load_root(&self, world_owner: &Rc<dyn IsObj>) -> (Entity, Names) {
-        let mut name_resolver = NameResolver::new();
-        let root = self.load_content(world_owner, &mut name_resolver);
+        self.apply(instance, world_owner, &mut name_resolver);
         let names = name_resolver.finish();
-        (root, names)
+        (instance, names)
     }
 }
 

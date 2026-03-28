@@ -46,6 +46,75 @@ macro_rules! property_ro {
 }
 
 #[macro_export]
+macro_rules! property_rw {
+    ($Termx:ident, $component:ident, $name:ident, $get_set:ty) => {
+        $crate::paste_paste! {
+            pub fn [< get_ $name >] (
+                entity: $crate::ooecs_Entity,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+            ) -> $get_set {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                entity.get::<Self>(component, &world).unwrap().$name
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $get_set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+            }
+        }
+    };
+    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty) => {
+        $crate::paste_paste! {
+            pub fn [< get_ $name >] <T> (
+                entity: $crate::ooecs_Entity,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce($get) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                f(&entity.get::<Self>(component, &world).unwrap().$name)
+            }
+
+            pub fn [< get_ $name _mut >] <T> (
+                entity: $crate::ooecs_Entity,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce(&mut $set) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                f(&mut entity.get_mut::<Self>(component, &mut world).unwrap().$name)
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! property {
     ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @measure) => {
         $crate::paste_paste! {
