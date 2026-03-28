@@ -375,9 +375,13 @@ macro_rules! property {
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::string::ToString;
-    use crate::components::background::Background;
+    use alloc::rc::Rc;
+    use alloc::string::ToString;
+    use basic_oop::obj::IsObj;
+    use crate::components::background::{Background, BackgroundTemplate};
+    use crate::components::view_layout::ViewLayout;
     use crate::systems::layout::LayoutExt;
+    use crate::template::Template;
     use crate::termx::Termx;
     use int_vec_2d::Vector;
 
@@ -392,5 +396,18 @@ mod tests {
         }
         Background::set_pattern(bg, &termx, "x".to_string());
         assert_eq!(&Background::get_pattern(bg, &termx, |x| x.to_string()), "x");
+    }
+
+    #[test]
+    fn create_bcackground_with_template() {
+        let termx = Termx::new();
+        let termx_as_obj: Rc<dyn IsObj> = termx.clone();
+        let (bg, _) = BackgroundTemplate {
+            pattern: Some("x".to_string()),
+            width: Some(Some(20)),
+            .. Default::default()
+        }.load_content(&termx_as_obj);
+        assert_eq!(&Background::get_pattern(bg, &termx, |x| x.to_string()), "x");
+        assert_eq!(ViewLayout::get_width(bg, &termx), Some(20));
     }
 }
