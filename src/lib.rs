@@ -28,6 +28,7 @@ pub mod systems;
 pub mod termx;
 pub mod render_port;
 pub mod template;
+pub mod xaml;
 
 #[macro_export]
 macro_rules! property_ro {
@@ -399,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn create_bcackground_with_template() {
+    fn create_background_with_template() {
         let termx = Termx::new();
         let termx_as_obj: Rc<dyn IsObj> = termx.clone();
         let (bg, _) = BackgroundTemplate {
