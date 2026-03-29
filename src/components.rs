@@ -5,3 +5,4 @@ pub mod panel;
 pub mod view_layout;
 pub mod background;
 pub mod stack_panel;
+pub mod canvas_layout;
