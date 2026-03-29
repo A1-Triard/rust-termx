@@ -9,6 +9,7 @@ use crate::components::layout_view::LayoutView;
 use crate::components::view_layout::ViewLayout;
 use crate::components::stack_panel::StackPanel;
 use crate::components::canvas_layout::CanvasLayout;
+use crate::components::canvas::Canvas;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use ooecs::{Component, World};
@@ -30,6 +31,7 @@ pub struct TermxComponents {
     pub background: Component<Background, Termx>,
     pub stack_panel: Component<StackPanel, Termx>,
     pub canvas_layout: Component<CanvasLayout, Termx>,
+    pub canvas: Component<Canvas, Termx>,
 }
 
 pub struct TermxSystems {
@@ -106,6 +108,7 @@ impl Termx {
         let background: Component<Background, Termx> = Component::new(decorator, &mut world);
         let stack_panel: Component<StackPanel, Termx> = Component::new(panel, &mut world);
         let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, &mut world);
+        let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -115,6 +118,7 @@ impl Termx {
             background,
             stack_panel,
             canvas_layout,
+            canvas,
         }));
     }
 
@@ -150,6 +154,7 @@ impl Termx {
             components.as_ref().unwrap().decorator,
             components.as_ref().unwrap().panel,
             components.as_ref().unwrap().stack_panel,
+            components.as_ref().unwrap().canvas_layout,
         )
     }
 

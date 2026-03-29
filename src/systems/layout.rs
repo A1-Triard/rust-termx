@@ -8,6 +8,7 @@ use crate::components::layout_view::*;
 use crate::components::panel::Panel;
 use crate::components::stack_panel::StackPanel;
 use crate::components::view::View;
+use crate::components::canvas_layout::CanvasLayout;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
 use int_vec_2d::{HAlign, VAlign, Thickness, Point};
@@ -29,6 +30,7 @@ pub struct Layout {
     pub decorator: Component<Decorator, Termx>,
     pub panel: Component<Panel, Termx>,
     pub stack_panel: Component<StackPanel, Termx>,
+    pub canvas_layout: Component<CanvasLayout, Termx>,
     #[virt]
     measure_override: fn(
         entity: Entity<Termx>,
@@ -48,6 +50,39 @@ pub struct Layout {
     arrange: fn(entity: Entity<Termx>, world: &mut World<Termx>, bounds: Rect),
     #[non_virt]
     perform: fn(root: Entity<Termx>, world: &mut World<Termx>, size: Vector),
+}
+
+fn measure_background(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let child = entity.get(layout.decorator, world).unwrap().child();
+    if let Some(child) = child {
+        this.measure(child, world, w, h);
+        child.get(layout.layout_view, world).unwrap().desired_size
+    } else {
+        Vector::null()
+    }
+}
+
+fn arrange_background(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let child = entity.get(layout.decorator, world).unwrap().child();
+    if let Some(child) = child {
+        this.arrange(child, world, inner_bounds);
+        child.get(layout.layout_view, world).unwrap().render_bounds.size
+    } else {
+        inner_bounds.size
+    }
 }
 
 fn measure_stack_panel(
@@ -115,6 +150,39 @@ fn arrange_stack_panel(
     }
 }
 
+fn measure_canvas(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let children = entity.get(layout.panel, world).unwrap().children().to_vec();
+    for child in children {
+        this.measure(child, world, None, None);
+    }
+    Vector { x: w.unwrap_or(1), y: h.unwrap_or(1) }
+}
+
+fn arrange_canvas(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let children = entity.get(layout.panel, world).unwrap().children().to_vec();
+    for child in children {
+        let child_size = child.get(layout.layout_view, world).unwrap().desired_size();
+        let child_layout = child.get(layout.view, world).unwrap().layout();
+        let child_layout = child_layout.and_then(|x| x.get(layout.canvas_layout, world));
+        let tl = child_layout.map_or(Point { x: 0, y: 0 }, |x| x.tl());
+        this.arrange(child, world, Rect { tl, size: child_size });
+    }
+    inner_bounds.size
+}
+
 impl Layout {
     pub fn new(
         termx: &Rc<dyn IsTermx>,
@@ -124,6 +192,7 @@ impl Layout {
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
         stack_panel: Component<StackPanel, Termx>,
+        canvas_layout: Component<CanvasLayout, Termx>,
     ) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(
             termx,
@@ -133,6 +202,7 @@ impl Layout {
             decorator,
             panel,
             stack_panel,
+            canvas_layout,
             LAYOUT_VTABLE.as_ptr(),
         ) })
     }
@@ -145,6 +215,7 @@ impl Layout {
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
         stack_panel: Component<StackPanel, Termx>,
+        canvas_layout: Component<CanvasLayout, Termx>,
         vtable: Vtable,
     ) -> Self {
         Layout {
@@ -156,6 +227,7 @@ impl Layout {
             decorator,
             panel,
             stack_panel,
+            canvas_layout,
         }
     }
 
@@ -168,16 +240,9 @@ impl Layout {
     ) -> Vector {
         let layout = this.layout();
         match entity.get(layout.layout_view, world).unwrap().layout() {
-            LAYOUT_BACKGROUND => {
-                let child = entity.get(layout.decorator, world).unwrap().child();
-                if let Some(child) = child {
-                    this.measure(child, world, w, h);
-                    child.get(layout.layout_view, world).unwrap().desired_size
-                } else {
-                    Vector::null()
-                }
-            },
+            LAYOUT_BACKGROUND => measure_background(this, entity, world, w, h),
             LAYOUT_STACK_PANEL => measure_stack_panel(this, entity, world, w, h),
+            LAYOUT_CANVAS => measure_canvas(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -190,16 +255,9 @@ impl Layout {
     ) -> Vector {
         let layout = this.layout();
         match entity.get(layout.layout_view, world).unwrap().layout() {
-            LAYOUT_BACKGROUND => {
-                let child = entity.get(layout.decorator, world).unwrap().child();
-                if let Some(child) = child {
-                    this.arrange(child, world, inner_bounds);
-                    child.get(layout.layout_view, world).unwrap().render_bounds.size
-                } else {
-                    inner_bounds.size
-                }
-            },
+            LAYOUT_BACKGROUND => arrange_background(this, entity, world, inner_bounds),
             LAYOUT_STACK_PANEL => arrange_stack_panel(this, entity, world, inner_bounds),
+            LAYOUT_CANVAS => arrange_canvas(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }
