@@ -26,6 +26,7 @@ pub struct LayoutView {
 
 pub const LAYOUT_NONE: u16 = 0;
 pub const LAYOUT_BACKGROUND: u16 = 1;
+pub const LAYOUT_STACK_PANEL: u16 = 2;
 
 impl LayoutView {
     pub fn new(layout: u16) -> Self {

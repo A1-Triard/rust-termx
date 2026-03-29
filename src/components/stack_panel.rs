@@ -1,70 +1,42 @@
 use alloc::rc::Rc;
-use alloc::vec::Vec;
-use crate::property_ro;
-use crate::systems::layout::LayoutExt;
-use crate::systems::render::RenderExt;
+use alloc::string::String;
+use crate::components::layout_view::*;
+use crate::components::panel::Panel;
+use crate::components::view::*;
+use crate::property;
+use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
 use ooecs::Entity;
 
-pub struct Panel {
-    children: Vec<Entity<Termx>>,
+pub struct StackPanel {
+    vertical: bool,
 }
 
-impl Panel {
+impl StackPanel {
     pub fn new() -> Self {
-        Panel { children: Vec::new() }
+        StackPanel { vertical: true }
     }
 
-    property_ro!(Termx, panel, children, ref as &[Entity<Termx>]);
-
-    pub fn get_children_mut<T>(
-        entity: Entity<Termx>,
-        termx: &Rc<dyn IsTermx>,
-        f: impl FnOnce(&mut Vec<Entity<Termx>>) -> T,
-    ) -> T {
+    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
-        let component = termx.components().panel;
+        let view = termx.components().view;
+        let layout_view = termx.components().layout_view;
+        let panel = termx.components().panel;
+        let stack_panel = termx.components().stack_panel;
         let mut world = termx.world.borrow_mut();
-        let elements = entity.get(component, &world).unwrap().children.clone();
-        for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, &mut world);
-        }
-        let res = f(&mut entity.get_mut(component, &mut world).unwrap().children);
-        let elements = entity.get(component, &world).unwrap().children.clone();
-        for element in elements {
-            termx.systems().render.add_visual_child(entity, element, &mut world);
-        }
-        termx.systems().layout.invalidate_measure(entity, &mut world);
-        res
+        let p = Entity::new(stack_panel, &mut world);
+        p.add(view, &mut world, View::new(TREE_PANEL, RENDER_NONE));
+        p.add(layout_view, &mut world, LayoutView::new(LAYOUT_STACK_PANEL));
+        p.add(panel, &mut world, Panel::new());
+        p.add(stack_panel, &mut world, StackPanel::new());
+        p
     }
 
-    pub fn set_children(
-        entity: Entity<Termx>,
-        termx: &Rc<dyn IsTermx>,
-        value: &Vec<Entity<Termx>>,
-    ) {
-        let termx = termx.termx();
-        let component = termx.components().panel;
-        let mut world = termx.world.borrow_mut();
-        let elements = entity.get(component, &world).unwrap().children.clone();
-        for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, &mut world);
-        }
-        entity.get_mut(component, &mut world).unwrap().children = value.clone();
-        for &element in value {
-            termx.systems().render.add_visual_child(entity, element, &mut world);
-        }
-        termx.systems().layout.invalidate_measure(entity, &mut world);
-    }
-}
-
-#[doc(hidden)]
-pub fn vec_is_empty<T>(x: &Vec<T>) -> bool {
-    x.is_empty()
+    property!(Termx, stack_panel, vertical, bool, @measure);
 }
 
 #[macro_export]
-macro_rules! panel_template {
+macro_rules! stack_panel_template {
     (
         $(#[$attr:meta])*
         $vis:vis struct $name:ident in $mod:ident {
@@ -75,15 +47,14 @@ macro_rules! panel_template {
             ),+ $(,)?)?
         }
     ) => {
-        $crate::view_layout_template! {
+        $crate::panel_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
-                use $crate::components::panel::vec_is_empty as components_panel_vec_is_empty;
                 $(use $path as $import;)*
 
                 #[serde(default)]
-                #[serde(skip_serializing_if="components_panel_vec_is_empty")]
-                pub children: Vec<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub vertical: Option<bool>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -94,13 +65,33 @@ macro_rules! panel_template {
 }
 
 #[macro_export]
-macro_rules! panel_apply_template {
+macro_rules! stack_panel_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
-        $crate::components::panel::Panel::get_children_mut($entity, $termx, |children| {
-            for child in &$this.children {
-                children.push(child.load_content_inline($termx, $names));
-            }
-        });
+        $crate::panel_apply_template! { $this, $entity, $termx, $names }
+        $this.vertical.map(|x|
+            $crate::components::stack_panel::StackPanel::set_vertical($entity, $termx, x)
+        );
     };
+}
+
+stack_panel_template! {
+    #[derive(serde::Serialize, serde::Deserialize, Default, Clone)]
+    #[serde(rename="StackPanel@Children")]
+    pub struct StackPanelTemplate in template { }
+}
+
+#[typetag::serde(name="StackPanel")]
+impl Template for StackPanelTemplate {
+    fn name(&self) -> Option<&String> {
+        Some(&self.name)
+    }
+
+    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        StackPanel::new_entity(termx)
+    }
+
+    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+        let this = self;
+        stack_panel_apply_template! { this, entity, termx, names }
+    }
 }

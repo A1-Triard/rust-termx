@@ -4,3 +4,4 @@ pub mod decorator;
 pub mod panel;
 pub mod view_layout;
 pub mod background;
+pub mod stack_panel;

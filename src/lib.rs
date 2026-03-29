@@ -18,6 +18,8 @@ pub use alloc::rc::Rc as alloc_rc_Rc;
 #[doc(hidden)]
 pub use alloc::string::String as alloc_string_String;
 #[doc(hidden)]
+pub use alloc::vec::Vec as alloc_vec_Vec;
+#[doc(hidden)]
 pub use basic_oop::obj::IsObj as basic_oop_obj_IsObj;
 #[doc(hidden)]
 pub use ooecs::Entity as ooecs_Entity;

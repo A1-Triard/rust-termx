@@ -83,7 +83,7 @@ macro_rules! panel_template {
 
                 #[serde(default)]
                 #[serde(skip_serializing_if="components_panel_vec_is_empty")]
-                pub children: Vec<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
+                pub children: $crate::alloc_vec_Vec<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
