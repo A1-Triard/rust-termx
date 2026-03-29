@@ -76,10 +76,10 @@ impl Render {
         world: &World<Termx>,
     ) -> usize {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().tree() {
+        match entity.get(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
-                let decorator = entity.get::<Decorator>(render.decorator, world).unwrap();
-                if decorator.child.is_some() { 1 } else { 0 }
+                let decorator = entity.get(render.decorator, world).unwrap();
+                if decorator.child().is_some() { 1 } else { 0 }
             },
             _ => 0,
         }
@@ -92,11 +92,11 @@ impl Render {
         index: usize,
     ) -> Entity<Termx> {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().tree() {
+        match entity.get(render.view, world).unwrap().tree() {
             TREE_DECORATOR => {
-                let decorator = entity.get::<Decorator>(render.decorator, world).unwrap();
+                let decorator = entity.get(render.decorator, world).unwrap();
                 assert_eq!(index, 0);
-                decorator.child.unwrap()
+                decorator.child().unwrap()
             },
             _ => panic!(),
         }
@@ -109,9 +109,9 @@ impl Render {
         rp: &mut RenderPort
     ) {
         let render = this.render();
-        match entity.get::<View>(render.view, world).unwrap().render() {
+        match entity.get(render.view, world).unwrap().render() {
             RENDER_BACKGROUND => {
-                let background = entity.get::<Background>(render.background, world).unwrap();
+                let background = entity.get(render.background, world).unwrap();
                 rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
             },
             _ => { },
@@ -125,7 +125,7 @@ impl Render {
         world: &mut World<Termx>,
     ) {
         let render = this.render();
-        child.get_mut::<View>(render.view, world).unwrap().visual_parent = Some(parent);
+        child.get_mut(render.view, world).unwrap().visual_parent = Some(parent);
         this.invalidate_render(child, world);
     }
 
@@ -137,14 +137,14 @@ impl Render {
     ) {
         this.invalidate_render(child, world);
         let render = this.render();
-        let view = child.get_mut::<View>(render.view, world).unwrap();
+        let view = child.get_mut(render.view, world).unwrap();
         assert_eq!(view.visual_parent, Some(parent));
         view.visual_parent = None;
     }
 
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
-        let rect = entity.get::<View>(render.view, world).unwrap().real_render_bounds;
+        let rect = entity.get(render.view, world).unwrap().real_render_bounds;
         let union = render.invalidated_rect.get().union_intersect(rect, render.screen_rect.get());
         render.invalidated_rect.set(union);
     }
@@ -165,7 +165,7 @@ impl Render {
         let base_bounds = rp.bounds;
         for i in 0 .. this.visual_children_count(entity, world) {
             let child = this.visual_child(entity, world, i);
-            let view = child.get::<View>(render.view, world).unwrap();
+            let view = child.get(render.view, world).unwrap();
             let bounds = view.real_render_bounds.offset(base_offset);
             rp.bounds = bounds.intersect(base_bounds);
             rp.offset = Vector { x: bounds.l(), y: bounds.t() };
@@ -189,7 +189,7 @@ impl Render {
             render.screen_rect.set(Rect { tl: Point { x: 0, y: 0 }, size: screen_size });
             invalidated_rect = Rect { tl: Point { x: 0, y: 0 }, size: screen_size };
         }
-        let bounds = root.get::<View>(render.view, world).unwrap().real_render_bounds;
+        let bounds = root.get(render.view, world).unwrap().real_render_bounds;
         let mut rp = RenderPort {
             screen,
             invalidated_rect,

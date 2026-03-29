@@ -6,7 +6,7 @@ use crate::termx::{Termx, IsTermx};
 use ooecs::Entity;
 
 pub struct Decorator {
-    pub(crate) child: Option<Entity<Termx>>,
+    child: Option<Entity<Termx>>,
 }
 
 impl Decorator {
@@ -20,11 +20,11 @@ impl Decorator {
         let termx = termx.termx();
         let component = termx.components().decorator;
         let mut world = termx.world.borrow_mut();
-        let old_child = entity.get::<Decorator>(component, &mut world).unwrap().child;
+        let old_child = entity.get(component, &mut world).unwrap().child;
         if let Some(child) = old_child {
             termx.systems().render.remove_visual_child(entity, child, &mut world);
         }
-        entity.get_mut::<Self>(component, &mut world).unwrap().child = value;
+        entity.get_mut(component, &mut world).unwrap().child = value;
         if let Some(child) = value {
             termx.systems().render.add_visual_child(entity, child, &mut world);
         }

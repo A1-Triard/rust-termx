@@ -46,7 +46,7 @@ macro_rules! property_ro {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                entity.get::<Self>(component, &world).unwrap().$name
+                entity.get(component, &world).unwrap().$name
             }
         }
     };
@@ -64,7 +64,7 @@ macro_rules! property_rw {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                entity.get::<Self>(component, &world).unwrap().$name
+                entity.get(component, &world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -76,7 +76,7 @@ macro_rules! property_rw {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
             }
         }
     };
@@ -91,7 +91,7 @@ macro_rules! property_rw {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                f(&entity.get::<Self>(component, &world).unwrap().$name)
+                f(&entity.get(component, &world).unwrap().$name)
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -103,7 +103,7 @@ macro_rules! property_rw {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                f(&mut entity.get_mut::<Self>(component, &mut world).unwrap().$name)
+                f(&mut entity.get_mut(component, &mut world).unwrap().$name)
             }
 
             pub fn [< set_ $name >] (
@@ -115,7 +115,7 @@ macro_rules! property_rw {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
             }
         }
     };
@@ -137,7 +137,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                entity.get::<Self>(component, &world).unwrap().$name
+                entity.get(component, &world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -149,7 +149,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::layout::LayoutExt::invalidate_measure(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -170,7 +170,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                entity.get::<Self>(component, &world).unwrap().$name
+                entity.get(component, &world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -182,7 +182,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -203,7 +203,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                entity.get::<Self>(component, &world).unwrap().$name
+                entity.get(component, &world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -215,7 +215,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::render::RenderExt::invalidate_render(
                     &termx.systems().render, entity, &mut world
                 );
@@ -237,7 +237,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                f(&entity.get::<Self>(component, &world).unwrap().$name)
+                f(&entity.get(component, &world).unwrap().$name)
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -249,7 +249,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                let res = f(&mut entity.get_mut::<Self>(component, &mut world).unwrap().$name);
+                let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
                 $crate::systems::layout::LayoutExt::invalidate_measure(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -265,7 +265,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::layout::LayoutExt::invalidate_measure(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -287,7 +287,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                f(&entity.get::<Self>(component, &world).unwrap().$name)
+                f(&entity.get(component, &world).unwrap().$name)
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -299,7 +299,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                let res = f(&mut entity.get_mut::<Self>(component, &mut world).unwrap().$name);
+                let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -315,7 +315,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -337,7 +337,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let world = termx.world.borrow();
-                f(&entity.get::<Self>(component, &world).unwrap().$name)
+                f(&entity.get(component, &world).unwrap().$name)
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -349,7 +349,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                let res = f(&mut entity.get_mut::<Self>(component, &mut world).unwrap().$name);
+                let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
                 $crate::systems::layout::LayoutExt::invalidate_measure(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -365,7 +365,7 @@ macro_rules! property {
                 let termx = termx.termx();
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
-                entity.get_mut::<Self>(component, &mut world).unwrap().$name = value;
+                entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::render::RenderExt::invalidate_render(
                     &termx.systems().render, entity, &mut world
                 );
