@@ -1,5 +1,5 @@
 pub mod view;
-pub mod view_layout;
+pub mod layout_view;
 pub mod decorator;
 pub mod panel;
 pub mod background;

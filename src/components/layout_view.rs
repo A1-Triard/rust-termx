@@ -8,7 +8,7 @@ use serde::de::{self};
 use serde::de::Error as de_Error;
 use serde::{Deserializer, Serializer, Serialize, Deserialize};
 
-pub struct ViewLayout {
+pub struct LayoutView {
     layout: u16,
     pub(crate) measure_size: Option<(Option<i16>, Option<i16>)>,
     pub(crate) desired_size: Vector,
@@ -27,9 +27,9 @@ pub struct ViewLayout {
 pub const LAYOUT_NONE: u16 = 0;
 pub const LAYOUT_BACKGROUND: u16 = 1;
 
-impl ViewLayout {
+impl LayoutView {
     pub fn new(layout: u16) -> Self {
-        ViewLayout {
+        LayoutView {
             layout,
             measure_size: None,
             desired_size: Vector::null(),
@@ -58,14 +58,14 @@ impl ViewLayout {
         self.render_bounds
     }
 
-    property!(Termx, view_layout, min_size, Vector, @measure);
-    property!(Termx, view_layout, max_width, Option<i16>, @measure);
-    property!(Termx, view_layout, max_height, Option<i16>, @measure);
-    property!(Termx, view_layout, width, Option<i16>, @measure);
-    property!(Termx, view_layout, height, Option<i16>, @measure);
-    property!(Termx, view_layout, margin, Thickness, @measure);
-    property!(Termx, view_layout, h_align, ViewHAlign, @measure);
-    property!(Termx, view_layout, v_align, ViewVAlign, @measure);
+    property!(Termx, layout_view, min_size, Vector, @measure);
+    property!(Termx, layout_view, max_width, Option<i16>, @measure);
+    property!(Termx, layout_view, max_height, Option<i16>, @measure);
+    property!(Termx, layout_view, width, Option<i16>, @measure);
+    property!(Termx, layout_view, height, Option<i16>, @measure);
+    property!(Termx, layout_view, margin, Thickness, @measure);
+    property!(Termx, layout_view, h_align, ViewHAlign, @measure);
+    property!(Termx, layout_view, v_align, ViewVAlign, @measure);
 }
 
 #[derive(Serialize, Deserialize)]
@@ -121,7 +121,7 @@ pub fn deserialize_optional_i16<'de, D>(
 }
 
 #[macro_export]
-macro_rules! view_layout_template {
+macro_rules! layout_view_template {
     (
         $(#[$attr:meta])*
         $vis:vis struct $name:ident in $mod:ident {
@@ -135,34 +135,34 @@ macro_rules! view_layout_template {
         $crate::view_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
-                use $crate::components::view_layout::serialize_optional_i16
-                    as termx_components_view_layout_serialize_optional_i16;
-                use $crate::components::view_layout::deserialize_optional_i16
-                    as termx_components_view_layout_deserialize_optional_i16;
+                use $crate::components::layout_view::serialize_optional_i16
+                    as termx_components_layout_view_serialize_optional_i16;
+                use $crate::components::layout_view::deserialize_optional_i16
+                    as termx_components_layout_view_deserialize_optional_i16;
                 $(use $path as $import;)*
 
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="termx_components_view_layout_serialize_optional_i16")]
-                #[serde(deserialize_with="termx_components_view_layout_deserialize_optional_i16")]
+                #[serde(serialize_with="termx_components_layout_view_serialize_optional_i16")]
+                #[serde(deserialize_with="termx_components_layout_view_deserialize_optional_i16")]
                 pub width: Option<Option<i16>>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="termx_components_view_layout_serialize_optional_i16")]
-                #[serde(deserialize_with="termx_components_view_layout_deserialize_optional_i16")]
+                #[serde(serialize_with="termx_components_layout_view_serialize_optional_i16")]
+                #[serde(deserialize_with="termx_components_layout_view_deserialize_optional_i16")]
                 pub height: Option<Option<i16>>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
                 pub min_size: Option<$crate::base::Vector>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="termx_components_view_layout_serialize_optional_i16")]
-                #[serde(deserialize_with="termx_components_view_layout_deserialize_optional_i16")]
+                #[serde(serialize_with="termx_components_layout_view_serialize_optional_i16")]
+                #[serde(deserialize_with="termx_components_layout_view_deserialize_optional_i16")]
                 pub max_width: Option<Option<i16>>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="termx_components_view_layout_serialize_optional_i16")]
-                #[serde(deserialize_with="termx_components_view_layout_deserialize_optional_i16")]
+                #[serde(serialize_with="termx_components_layout_view_serialize_optional_i16")]
+                #[serde(deserialize_with="termx_components_layout_view_deserialize_optional_i16")]
                 pub max_height: Option<Option<i16>>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
@@ -183,18 +183,18 @@ macro_rules! view_layout_template {
 }
 
 #[macro_export]
-macro_rules! view_layout_apply_template {
+macro_rules! layout_view_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::view_apply_template! { $this, $entity, $termx, $names }
-        $this.width.map(|x| $crate::components::view_layout::ViewLayout::set_width($entity, $termx, x));
-        $this.height.map(|x| $crate::components::view_layout::ViewLayout::set_height($entity, $termx, x));
-        $this.min_size.map(|x| $crate::components::view_layout::ViewLayout::set_min_size($entity, $termx, x));
-        $this.max_width.map(|x| $crate::components::view_layout::ViewLayout::set_max_width($entity, $termx, x));
+        $this.width.map(|x| $crate::components::layout_view::LayoutView::set_width($entity, $termx, x));
+        $this.height.map(|x| $crate::components::layout_view::LayoutView::set_height($entity, $termx, x));
+        $this.min_size.map(|x| $crate::components::layout_view::LayoutView::set_min_size($entity, $termx, x));
+        $this.max_width.map(|x| $crate::components::layout_view::LayoutView::set_max_width($entity, $termx, x));
         $this.max_height.map(|x|
-            $crate::components::view_layout::ViewLayout::set_max_height($entity, $termx, x)
+            $crate::components::layout_view::LayoutView::set_max_height($entity, $termx, x)
         );
-        $this.h_align.map(|x| $crate::components::view_layout::ViewLayout::set_h_align($entity, $termx, x));
-        $this.v_align.map(|x| $crate::components::view_layout::ViewLayout::set_v_align($entity, $termx, x));
-        $this.margin.map(|x| $crate::components::view_layout::ViewLayout::set_margin($entity, $termx, x)); 
+        $this.h_align.map(|x| $crate::components::layout_view::LayoutView::set_h_align($entity, $termx, x));
+        $this.v_align.map(|x| $crate::components::layout_view::LayoutView::set_v_align($entity, $termx, x));
+        $this.margin.map(|x| $crate::components::layout_view::LayoutView::set_margin($entity, $termx, x)); 
     };
 }

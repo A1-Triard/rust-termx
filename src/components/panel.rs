@@ -75,7 +75,7 @@ macro_rules! panel_template {
             ),+ $(,)?)?
         }
     ) => {
-        $crate::view_layout_template! {
+        $crate::layout_view_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
                 use $crate::components::panel::vec_is_empty as components_panel_vec_is_empty;
@@ -96,7 +96,7 @@ macro_rules! panel_template {
 #[macro_export]
 macro_rules! panel_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
+        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
         $crate::components::panel::Panel::get_children_mut($entity, $termx, |children| {
             for child in &$this.children {
                 children.push(child.load_content_inline($termx, $names));

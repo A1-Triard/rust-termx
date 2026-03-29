@@ -44,7 +44,7 @@ macro_rules! decorator_template {
             ),+ $(,)?)?
         }
     ) => {
-        $crate::view_layout_template! {
+        $crate::layout_view_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
                 $(use $path as $import;)*
@@ -64,7 +64,7 @@ macro_rules! decorator_template {
 #[macro_export]
 macro_rules! decorator_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
+        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
         $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
             $entity,
             $termx,

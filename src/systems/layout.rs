@@ -4,7 +4,7 @@ use core::cmp::min;
 use crate::base::{ViewHAlign, ViewVAlign};
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
-use crate::components::view_layout::*;
+use crate::components::layout_view::*;
 use crate::components::view::View;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
@@ -21,7 +21,7 @@ import! { pub layout:
 #[class_unsafe(inherits_Obj)]
 pub struct Layout {
     pub termx: rc::Weak<dyn IsTermx>,
-    pub view_layout: Component<ViewLayout, Termx>,
+    pub layout_view: Component<LayoutView, Termx>,
     pub view: Component<View, Termx>,
     pub background: Component<Background, Termx>,
     pub decorator: Component<Decorator, Termx>,
@@ -49,14 +49,14 @@ pub struct Layout {
 impl Layout {
     pub fn new(
         termx: &Rc<dyn IsTermx>,
-        view_layout: Component<ViewLayout, Termx>,
+        layout_view: Component<LayoutView, Termx>,
         view: Component<View, Termx>,
         background: Component<Background, Termx>,
         decorator: Component<Decorator, Termx>,
     ) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(
             termx,
-            view_layout,
+            layout_view,
             view,
             background,
             decorator,
@@ -66,7 +66,7 @@ impl Layout {
 
     pub unsafe fn new_raw(
         termx: &Rc<dyn IsTermx>,
-        view_layout: Component<ViewLayout, Termx>,
+        layout_view: Component<LayoutView, Termx>,
         view: Component<View, Termx>,
         background: Component<Background, Termx>,
         decorator: Component<Decorator, Termx>,
@@ -75,7 +75,7 @@ impl Layout {
         Layout {
             obj: unsafe { Obj::new_raw(vtable) },
             termx: Rc::downgrade(termx),
-            view_layout,
+            layout_view,
             view,
             background,
             decorator,
@@ -90,12 +90,12 @@ impl Layout {
         h: Option<i16>,
     ) -> Vector {
         let layout = this.layout();
-        match entity.get(layout.view_layout, world).unwrap().layout() {
+        match entity.get(layout.layout_view, world).unwrap().layout() {
             LAYOUT_BACKGROUND => {
                 let child = entity.get(layout.decorator, world).unwrap().child();
                 if let Some(child) = child {
                     this.measure(child, world, w, h);
-                    child.get(layout.view_layout, world).unwrap().desired_size
+                    child.get(layout.layout_view, world).unwrap().desired_size
                 } else {
                     Vector::null()
                 }
@@ -111,12 +111,12 @@ impl Layout {
         inner_bounds: Rect,
     ) -> Vector {
         let layout = this.layout();
-        match entity.get(layout.view_layout, world).unwrap().layout() {
+        match entity.get(layout.layout_view, world).unwrap().layout() {
             LAYOUT_BACKGROUND => {
                 let child = entity.get(layout.decorator, world).unwrap().child();
                 if let Some(child) = child {
                     this.arrange(child, world, inner_bounds);
-                    child.get(layout.view_layout, world).unwrap().render_bounds.size
+                    child.get(layout.layout_view, world).unwrap().render_bounds.size
                 } else {
                     inner_bounds.size
                 }
@@ -133,9 +133,9 @@ impl Layout {
         let layout = this.layout();
         loop {
             {
-                let view_layout = entity.get_mut(layout.view_layout, world).unwrap();
-                view_layout.measure_size = None;
-                view_layout.arrange_size = None;
+                let layout_view = entity.get_mut(layout.layout_view, world).unwrap();
+                layout_view.measure_size = None;
+                layout_view.arrange_size = None;
             }
             let view = entity.get(layout.view, world).unwrap();
             let Some(parent) = view.visual_parent else { break; };
@@ -151,8 +151,8 @@ impl Layout {
         let layout = this.layout();
         loop {
             {
-                let view_layout = entity.get_mut(layout.view_layout, world).unwrap();
-                view_layout.arrange_size = None;
+                let layout_view = entity.get_mut(layout.layout_view, world).unwrap();
+                layout_view.arrange_size = None;
             }
             let view = entity.get(layout.view, world).unwrap();
             let Some(parent) = view.visual_parent else { break; };
@@ -169,7 +169,7 @@ impl Layout {
     ) {
         let (a_w, a_h, max_size, min_size) = {
             let layout = this.layout();
-            let component = entity.get(layout.view_layout, world).unwrap();
+            let component = entity.get(layout.layout_view, world).unwrap();
             if component.measure_size == Some((w, h)) { return; }
             let max_width = component.width().or(component.max_width());
             let max_height = component.height().or(component.max_height());
@@ -189,7 +189,7 @@ impl Layout {
         };
         let desired_size = this.measure_override(entity, world, a_w, a_h);
         let layout = this.layout();
-        let component = entity.get_mut(layout.view_layout, world).unwrap();
+        let component = entity.get_mut(layout.layout_view, world).unwrap();
         let desired_size = desired_size.min(max_size).max(min_size);
         let desired_size = component.margin().expand_rect_size(desired_size);
         let desired_size = Vector {
@@ -208,7 +208,7 @@ impl Layout {
     ) {
         let (a_size, max_size, min_size) = {
             let layout = this.layout();
-            let component = entity.get(layout.view_layout, world).unwrap();
+            let component = entity.get(layout.layout_view, world).unwrap();
             let max_width = component.width().or(component.max_width());
             let max_height = component.height().or(component.max_height());
             let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
@@ -233,16 +233,16 @@ impl Layout {
                 entity, world, Rect { tl: Point { x: 0, y: 0 }, size: a_size }
             );
             let layout = this.layout();
-            let component = entity.get(layout.view_layout, world).unwrap();
+            let component = entity.get(layout.layout_view, world).unwrap();
             component.margin().expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
         } else {
             let layout = this.layout();
-            let component = entity.get(layout.view_layout, world).unwrap();
+            let component = entity.get(layout.layout_view, world).unwrap();
             component.render_bounds.size
         };
         let (render_bounds, real_render_bounds) = {
             let layout = this.layout();
-            let component = entity.get(layout.view_layout, world).unwrap();
+            let component = entity.get(layout.layout_view, world).unwrap();
             let h_align = <Option<HAlign>>::from(component.h_align()).unwrap_or(HAlign::Left);
             let v_align = <Option<VAlign>>::from(component.v_align()).unwrap_or(VAlign::Top);
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
@@ -252,7 +252,7 @@ impl Layout {
         };
         let layout = this.layout();
         if real_render_bounds == entity.get(layout.view, world).unwrap().real_render_bounds {
-            let component = entity.get_mut(layout.view_layout, world).unwrap();
+            let component = entity.get_mut(layout.layout_view, world).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
             return;
@@ -260,7 +260,7 @@ impl Layout {
         let termx = layout.termx.upgrade().unwrap();
         termx.termx().systems().render.invalidate_render(entity, world);
         {
-            let component = entity.get_mut(layout.view_layout, world).unwrap();
+            let component = entity.get_mut(layout.layout_view, world).unwrap();
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }

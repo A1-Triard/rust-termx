@@ -2,7 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::rc::Rc;
 use crate::components::decorator::Decorator;
 use crate::components::view::*;
-use crate::components::view_layout::*;
+use crate::components::layout_view::*;
 use crate::property;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
@@ -25,13 +25,13 @@ impl Background {
     pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view = termx.components().view;
-        let view_layout = termx.components().view_layout;
+        let layout_view = termx.components().layout_view;
         let decorator = termx.components().decorator;
         let background = termx.components().background;
         let mut world = termx.world.borrow_mut();
         let bg = Entity::new(background, &mut world);
         bg.add(view, &mut world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
-        bg.add(view_layout, &mut world, ViewLayout::new(LAYOUT_BACKGROUND));
+        bg.add(layout_view, &mut world, LayoutView::new(LAYOUT_BACKGROUND));
         bg.add(decorator, &mut world, Decorator::new());
         bg.add(background, &mut world, Background::new());
         bg
