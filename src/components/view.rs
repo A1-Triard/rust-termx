@@ -52,10 +52,18 @@ impl View {
     pub fn set_layout(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Option<Entity<Termx>>) {
         let termx = termx.termx();
         let component = termx.components().view;
+        let view_layout = termx.components().view_layout;
         let mut world = termx.world.borrow_mut();
+        let old_layout = entity.get(component, &world).unwrap().layout;
+        if let Some(old_layout) = old_layout {
+            old_layout.get_mut(view_layout, &mut world).unwrap().owner = None;
+        }
         let view = entity.get_mut(component, &mut world).unwrap();
         view.layout = value;
         let parent = view.visual_parent;
+        if let Some(new_layout) = value {
+            new_layout.get_mut(view_layout, &mut world).unwrap().owner = Some(entity);
+        }
         if let Some(parent) = parent {
             termx.systems().layout.invalidate_measure(parent, &mut world);
         }
