@@ -3,6 +3,7 @@ use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
+use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
 use int_vec_2d::{Vector, Point, Rect};
@@ -19,6 +20,7 @@ import! { pub render:
 pub struct Render {
     pub view: Component<View, Termx>,
     pub decorator: Component<Decorator, Termx>,
+    pub panel: Component<Panel, Termx>,
     pub background: Component<Background, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
@@ -43,11 +45,13 @@ impl Render {
     pub fn new(
         view: Component<View, Termx>,
         decorator: Component<Decorator, Termx>,
+        panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
             view,
             decorator,
+            panel,
             background,
             RENDER_VTABLE.as_ptr(),
         ) })
@@ -56,6 +60,7 @@ impl Render {
     pub unsafe fn new_raw(
         view: Component<View, Termx>,
         decorator: Component<Decorator, Termx>,
+        panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
         vtable: Vtable,
     ) -> Self {
@@ -63,6 +68,7 @@ impl Render {
             obj: unsafe { Obj::new_raw(vtable) },
             view,
             decorator,
+            panel,
             background,
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
@@ -81,6 +87,10 @@ impl Render {
                 let decorator = entity.get(render.decorator, world).unwrap();
                 if decorator.child().is_some() { 1 } else { 0 }
             },
+            TREE_PANEL => {
+                let panel = entity.get(render.panel, world).unwrap();
+                panel.children().len()
+            },
             _ => 0,
         }
     }
@@ -97,6 +107,10 @@ impl Render {
                 let decorator = entity.get(render.decorator, world).unwrap();
                 assert_eq!(index, 0);
                 decorator.child().unwrap()
+            },
+            TREE_PANEL => {
+                let panel = entity.get(render.panel, world).unwrap();
+                panel.children()[index]
             },
             _ => panic!(),
         }

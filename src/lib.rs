@@ -50,6 +50,25 @@ macro_rules! property_ro {
             }
         }
     };
+    ($Termx:ident, $component:ident, $name:ident, ref as $get:ty) => {
+        $crate::paste_paste! {
+            pub fn $name(&self) -> $get {
+                &self.$name
+            }
+
+            pub fn [< get_ $name >] <T> (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce($get) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                f(&entity.get(component, &world).unwrap().$name)
+            }
+        }
+    };
 }
 
 #[macro_export]

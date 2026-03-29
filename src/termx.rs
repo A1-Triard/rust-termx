@@ -3,6 +3,7 @@ use core::cell::{self, RefCell};
 use core::ops::Deref;
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
+use crate::components::panel::Panel;
 use crate::components::view::View;
 use crate::components::view_layout::ViewLayout;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
@@ -21,6 +22,7 @@ pub struct TermxComponents {
     pub view: Component<View, Termx>,
     pub view_layout: Component<ViewLayout, Termx>,
     pub decorator: Component<Decorator, Termx>,
+    pub panel: Component<Panel, Termx>,
     pub background: Component<Background, Termx>,
 }
 
@@ -93,11 +95,13 @@ impl Termx {
         let view: Component<View, Termx> = Component::new_base(&mut world);
         let view_layout: Component<ViewLayout, Termx> = Component::new(view, &mut world);
         let decorator: Component<Decorator, Termx> = Component::new(view_layout, &mut world);
+        let panel: Component<Panel, Termx> = Component::new(view_layout, &mut world);
         let background: Component<Background, Termx> = Component::new(decorator, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             view_layout,
             decorator,
+            panel,
             background,
         }));
     }
@@ -118,6 +122,7 @@ impl Termx {
         Render::new(
             components.as_ref().unwrap().view,
             components.as_ref().unwrap().decorator,
+            components.as_ref().unwrap().panel,
             components.as_ref().unwrap().background,
         )
     }
