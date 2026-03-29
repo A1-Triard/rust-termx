@@ -1,5 +1,7 @@
+use alloc::rc::Rc;
 use alloc::string::String;
-use crate::property_rw;
+use crate::{property_rw, property_ro};
+use crate::systems::layout::LayoutExt;
 use crate::termx::{Termx, IsTermx};
 use int_vec_2d::{Rect, Point, Vector};
 use ooecs::Entity;
@@ -10,6 +12,7 @@ pub struct View {
     tree: u16,
     render: u16,
     pub name: String,
+    layout: Option<Entity<Termx>>,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -27,6 +30,7 @@ impl View {
             tree,
             render,
             name: String::new(),
+            layout: None,
         }
     }
 
@@ -43,6 +47,19 @@ impl View {
     }
 
     property_rw!(Termx, view, name, ref String as &str);
+    property_ro!(Termx, view, layout, Option<Entity<Termx>>);
+
+    pub fn set_layout(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Option<Entity<Termx>>) {
+        let termx = termx.termx();
+        let component = termx.components().view;
+        let mut world = termx.world.borrow_mut();
+        let view = entity.get_mut(component, &mut world).unwrap();
+        view.layout = value;
+        let parent = view.visual_parent;
+        if let Some(parent) = parent {
+            termx.systems().layout.invalidate_measure(parent, &mut world);
+        }
+    }
 }
 
 #[doc(hidden)]
@@ -71,6 +88,9 @@ macro_rules! view_template {
                 #[serde(default)]
                 #[serde(skip_serializing_if="components_view_string_is_empty")]
                 pub name: $crate::alloc_string_String,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub layout: Option<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -84,5 +104,10 @@ macro_rules! view_template {
 macro_rules! view_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::components::view::View::set_name($entity, $termx, $this.name.clone());
+        $this.layout.as_ref().map(|x| $crate::components::view::View::set_layout(
+            $entity,
+            $termx,
+            Some(x.load_content_inline($termx, $names))
+        ));
     };
 }
