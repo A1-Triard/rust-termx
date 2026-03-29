@@ -5,6 +5,8 @@ use crate::base::{ViewHAlign, ViewVAlign};
 use crate::components::background::Background;
 use crate::components::decorator::Decorator;
 use crate::components::layout_view::*;
+use crate::components::panel::Panel;
+use crate::components::stack_panel::StackPanel;
 use crate::components::view::View;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
@@ -25,6 +27,8 @@ pub struct Layout {
     pub view: Component<View, Termx>,
     pub background: Component<Background, Termx>,
     pub decorator: Component<Decorator, Termx>,
+    pub panel: Component<Panel, Termx>,
+    pub stack_panel: Component<StackPanel, Termx>,
     #[virt]
     measure_override: fn(
         entity: Entity<Termx>,
@@ -46,6 +50,71 @@ pub struct Layout {
     perform: fn(root: Entity<Termx>, world: &mut World<Termx>, size: Vector),
 }
 
+fn measure_stack_panel(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let children = entity.get(layout.panel, world).unwrap().children().to_vec();
+    if entity.get(layout.stack_panel, world).unwrap().vertical() {
+        let mut size = Vector::null();
+        for child in children {
+            this.measure(child, world, w, None);
+            let desired_size = child.get(layout.layout_view, world).unwrap().desired_size();
+            size += Vector { x: 0, y: desired_size.y };
+            size = size.max(Vector { x: desired_size.x, y: 0 });
+        }
+        size
+    } else {
+        let mut size = Vector::null();
+        for child in children {
+            this.measure(child, world, None, h);
+            let desired_size = child.get(layout.layout_view, world).unwrap().desired_size();
+            size += Vector { x: desired_size.x, y: 0 };
+            size = size.max(Vector { x: 0, y: desired_size.y });
+        }
+        size
+    }
+}
+
+fn arrange_stack_panel(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let children = entity.get(layout.panel, world).unwrap().children().to_vec();
+    if entity.get(layout.stack_panel, world).unwrap().vertical() {
+        let mut pos = inner_bounds.tl;
+        let mut size = Vector::null();
+        for child in children {
+            let desired_size = child.get(layout.layout_view, world).unwrap().desired_size();
+            let child_size = Vector { x: inner_bounds.w(), y: desired_size.y };
+            this.arrange(child, world, Rect { tl: pos, size: child_size });
+            pos = pos.offset(Vector { x: 0, y: child_size.y });
+            size += Vector { x: 0, y: child_size.y };
+            size = size.max(Vector { x: child_size.x, y: 0 });
+        }
+        size
+    } else {
+        let mut pos = inner_bounds.tl;
+        let mut size = Vector::null();
+        for child in children {
+            let desired_size = child.get(layout.layout_view, world).unwrap().desired_size();
+            let child_size = Vector { x: desired_size.x, y: inner_bounds.h() };
+            this.arrange(child, world, Rect { tl: pos, size: child_size });
+            pos = pos.offset(Vector { x: child_size.x, y: 0 });
+            size += Vector { x: child_size.x, y: 0 };
+            size = size.max(Vector { x: 0, y: child_size.y });
+        }
+        size
+    }
+}
+
 impl Layout {
     pub fn new(
         termx: &Rc<dyn IsTermx>,
@@ -53,6 +122,8 @@ impl Layout {
         view: Component<View, Termx>,
         background: Component<Background, Termx>,
         decorator: Component<Decorator, Termx>,
+        panel: Component<Panel, Termx>,
+        stack_panel: Component<StackPanel, Termx>,
     ) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(
             termx,
@@ -60,6 +131,8 @@ impl Layout {
             view,
             background,
             decorator,
+            panel,
+            stack_panel,
             LAYOUT_VTABLE.as_ptr(),
         ) })
     }
@@ -70,6 +143,8 @@ impl Layout {
         view: Component<View, Termx>,
         background: Component<Background, Termx>,
         decorator: Component<Decorator, Termx>,
+        panel: Component<Panel, Termx>,
+        stack_panel: Component<StackPanel, Termx>,
         vtable: Vtable,
     ) -> Self {
         Layout {
@@ -79,6 +154,8 @@ impl Layout {
             view,
             background,
             decorator,
+            panel,
+            stack_panel,
         }
     }
 
@@ -100,6 +177,7 @@ impl Layout {
                     Vector::null()
                 }
             },
+            LAYOUT_STACK_PANEL => measure_stack_panel(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -121,6 +199,7 @@ impl Layout {
                     inner_bounds.size
                 }
             },
+            LAYOUT_STACK_PANEL => arrange_stack_panel(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

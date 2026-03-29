@@ -144,6 +144,8 @@ impl Termx {
             components.as_ref().unwrap().view,
             components.as_ref().unwrap().background,
             components.as_ref().unwrap().decorator,
+            components.as_ref().unwrap().panel,
+            components.as_ref().unwrap().stack_panel,
         )
     }
 
