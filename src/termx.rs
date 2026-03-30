@@ -2,6 +2,7 @@ use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::{self, RefCell};
 use core::ops::Deref;
 use crate::components::background::Background;
+use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
 use crate::components::panel::Panel;
 use crate::components::view::View;
@@ -32,6 +33,7 @@ pub struct TermxComponents {
     pub stack_panel: Component<StackPanel, Termx>,
     pub canvas_layout: Component<CanvasLayout, Termx>,
     pub canvas: Component<Canvas, Termx>,
+    pub t_button: Component<TButton, Termx>,
 }
 
 pub struct TermxSystems {
@@ -109,6 +111,7 @@ impl Termx {
         let stack_panel: Component<StackPanel, Termx> = Component::new(panel, &mut world);
         let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, &mut world);
         let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
+        let t_button: Component<TButton, Termx> = Component::new(view_layout, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -119,6 +122,7 @@ impl Termx {
             stack_panel,
             canvas_layout,
             canvas,
+            t_button,
         }));
     }
 
@@ -140,6 +144,7 @@ impl Termx {
             components.as_ref().unwrap().decorator,
             components.as_ref().unwrap().panel,
             components.as_ref().unwrap().background,
+            components.as_ref().unwrap().t_button,
         )
     }
 
@@ -155,6 +160,7 @@ impl Termx {
             components.as_ref().unwrap().panel,
             components.as_ref().unwrap().stack_panel,
             components.as_ref().unwrap().canvas_layout,
+            components.as_ref().unwrap().t_button,
         )
     }
 

@@ -21,6 +21,7 @@ pub const TREE_PANEL: u16 = 2;
 
 pub const RENDER_NONE: u16 = 0;
 pub const RENDER_BACKGROUND: u16 = 1;
+pub const RENDER_T_BUTTON: u16 = 2;
 
 impl View {
     pub fn new(tree: u16, render: u16) -> Self {
@@ -111,6 +112,7 @@ macro_rules! view_template {
 #[macro_export]
 macro_rules! view_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
+        let _ = $names;
         $crate::components::view::View::set_name($entity, $termx, $this.name.clone());
         $this.layout.as_ref().map(|x| $crate::components::view::View::set_layout(
             $entity,

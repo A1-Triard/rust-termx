@@ -1,8 +1,9 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cmp::min;
-use crate::base::{ViewHAlign, ViewVAlign};
+use crate::base::{ViewHAlign, ViewVAlign, label_width};
 use crate::components::background::Background;
+use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
 use crate::components::layout_view::*;
 use crate::components::panel::Panel;
@@ -31,6 +32,7 @@ pub struct Layout {
     pub panel: Component<Panel, Termx>,
     pub stack_panel: Component<StackPanel, Termx>,
     pub canvas_layout: Component<CanvasLayout, Termx>,
+    pub t_button: Component<TButton, Termx>,
     #[virt]
     measure_override: fn(
         entity: Entity<Termx>,
@@ -183,6 +185,28 @@ fn arrange_canvas(
     inner_bounds.size
 }
 
+fn measure_t_button(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    _w: Option<i16>,
+    _h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let text = &entity.get(layout.t_button, world).unwrap().text();
+    let text_width = label_width(text);
+    Thickness::new(1, 0, 1, 0).expand_rect_size(Vector { x: text_width, y: 1 })
+}
+
+fn arrange_t_button(
+    _this: &Rc<dyn IsLayout>,
+    _entity: Entity<Termx>,
+    _world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    inner_bounds.size
+}
+
 impl Layout {
     pub fn new(
         termx: &Rc<dyn IsTermx>,
@@ -193,6 +217,7 @@ impl Layout {
         panel: Component<Panel, Termx>,
         stack_panel: Component<StackPanel, Termx>,
         canvas_layout: Component<CanvasLayout, Termx>,
+        t_button: Component<TButton, Termx>,
     ) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(
             termx,
@@ -203,6 +228,7 @@ impl Layout {
             panel,
             stack_panel,
             canvas_layout,
+            t_button,
             LAYOUT_VTABLE.as_ptr(),
         ) })
     }
@@ -216,6 +242,7 @@ impl Layout {
         panel: Component<Panel, Termx>,
         stack_panel: Component<StackPanel, Termx>,
         canvas_layout: Component<CanvasLayout, Termx>,
+        t_button: Component<TButton, Termx>,
         vtable: Vtable,
     ) -> Self {
         Layout {
@@ -228,6 +255,7 @@ impl Layout {
             panel,
             stack_panel,
             canvas_layout,
+            t_button,
         }
     }
 
@@ -243,6 +271,7 @@ impl Layout {
             LAYOUT_BACKGROUND => measure_background(this, entity, world, w, h),
             LAYOUT_STACK_PANEL => measure_stack_panel(this, entity, world, w, h),
             LAYOUT_CANVAS => measure_canvas(this, entity, world, w, h),
+            LAYOUT_T_BUTTON => measure_t_button(this, entity, world, w, h), 
             _ => Vector::null()
         }
     }
@@ -258,6 +287,7 @@ impl Layout {
             LAYOUT_BACKGROUND => arrange_background(this, entity, world, inner_bounds),
             LAYOUT_STACK_PANEL => arrange_stack_panel(this, entity, world, inner_bounds),
             LAYOUT_CANVAS => arrange_canvas(this, entity, world, inner_bounds),
+            LAYOUT_T_BUTTON => arrange_t_button(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

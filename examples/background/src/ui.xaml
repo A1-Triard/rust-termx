@@ -1,1 +1,5 @@
-<Background xmlns='https://a1-triard.github.io/termx/2026/xaml' />
+<Background xmlns='https://a1-triard.github.io/termx/2026/xaml'>
+  <Canvas>
+    <TButton Text="Cancel" />
+  </Canvas>
+</Background>

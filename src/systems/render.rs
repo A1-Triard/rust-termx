@@ -2,6 +2,7 @@ use alloc::rc::Rc;
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use crate::components::background::Background;
+use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
 use crate::components::panel::Panel;
 use crate::components::view::*;
@@ -22,6 +23,7 @@ pub struct Render {
     pub decorator: Component<Decorator, Termx>,
     pub panel: Component<Panel, Termx>,
     pub background: Component<Background, Termx>,
+    pub t_button: Component<TButton, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
@@ -41,18 +43,42 @@ pub struct Render {
     perform: fn(root: Entity<Termx>, world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
+fn render_background(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort
+) {
+    let render = this.render();
+    let background = entity.get(render.background, world).unwrap();
+    rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
+}
+
+fn render_t_button(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort
+) {
+    let render = this.render();
+    let t_button = entity.get(render.t_button, world).unwrap();
+    rp.fill(|rp, p| rp.text(p, t_button.color(), " "));
+}
+
 impl Render {
     pub fn new(
         view: Component<View, Termx>,
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
+        t_button: Component<TButton, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
             view,
             decorator,
             panel,
             background,
+            t_button,
             RENDER_VTABLE.as_ptr(),
         ) })
     }
@@ -62,6 +88,7 @@ impl Render {
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
+        t_button: Component<TButton, Termx>,
         vtable: Vtable,
     ) -> Self {
         Render {
@@ -70,6 +97,7 @@ impl Render {
             decorator,
             panel,
             background,
+            t_button,
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
             screen_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
@@ -124,10 +152,8 @@ impl Render {
     ) {
         let render = this.render();
         match entity.get(render.view, world).unwrap().render() {
-            RENDER_BACKGROUND => {
-                let background = entity.get(render.background, world).unwrap();
-                rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
-            },
+            RENDER_BACKGROUND => render_background(this, entity, world, rp),
+            RENDER_T_BUTTON => render_t_button(this, entity, world, rp),
             _ => { },
         }
     }
