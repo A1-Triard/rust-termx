@@ -1,8 +1,13 @@
 <Background xmlns='https://a1-triard.github.io/termx/2026/xaml' Color="Black/LightGray" Pattern=" ">
   <Canvas>
-    <TButton Text="~C~ancel">
+    <TButton Text="~O~K" Width="8">
       <TButton.Layout>
         <CanvasLayout Tl="10,5" />
+      </TButton.Layout>
+    </TButton>
+    <TButton Text="~C~ancel">
+      <TButton.Layout>
+        <CanvasLayout Tl="10,8" />
       </TButton.Layout>
     </TButton>
   </Canvas>

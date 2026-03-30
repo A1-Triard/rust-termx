@@ -1,13 +1,15 @@
 use alloc::rc::Rc;
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
+use core::cmp::min;
+use crate::base::label_width;
 use crate::components::background::Background;
 use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
 use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
-use int_vec_2d::{Vector, Point, Rect, Thickness};
+use int_vec_2d::{Vector, Point, Rect, Thickness, HAlign, VAlign};
 use ooecs::Component;
 
 import! { pub render:
@@ -66,6 +68,13 @@ fn render_t_button(
     let t_button = entity.get(render.t_button, world).unwrap();
     let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
     let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(bg_bounds);
+    let text_align = Thickness::align(
+        Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+        text_bounds.size,
+        HAlign::Center,
+        VAlign::Center
+    );
+    let text_bounds = text_align.shrink_rect(text_bounds);
     let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
     let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
     rp.fill_rect(bg_bounds, |rp, p| rp.text(p, t_button.color(), " "));
