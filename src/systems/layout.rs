@@ -1,7 +1,7 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cmp::min;
-use crate::base::{ViewHAlign, ViewVAlign, label_width};
+use crate::base::{ViewHAlign, ViewVAlign, label_width, Visibility};
 use crate::components::background::Background;
 use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
@@ -348,8 +348,14 @@ impl Layout {
         w: Option<i16>,
         h: Option<i16>,
     ) {
+        let layout = this.layout();
+        if entity.get(layout.view, world).unwrap().visibility() == Visibility::Collapsed {
+            let component = entity.get_mut(layout.layout_view, world).unwrap();
+            component.measure_size = Some((w, h));
+            component.desired_size = Vector::null();
+            return;
+        }
         let (a_w, a_h, max_size, min_size) = {
-            let layout = this.layout();
             let component = entity.get(layout.layout_view, world).unwrap();
             if component.measure_size == Some((w, h)) { return; }
             let max_width = component.width().or(component.max_width());
@@ -369,7 +375,6 @@ impl Layout {
             (g_w.map(|_| a.x), g_h.map(|_| a.y), max_size, min_size)
         };
         let desired_size = this.measure_override(entity, world, a_w, a_h);
-        let layout = this.layout();
         let component = entity.get_mut(layout.layout_view, world).unwrap();
         let desired_size = desired_size.min(max_size).max(min_size);
         let desired_size = component.margin().expand_rect_size(desired_size);
@@ -387,42 +392,45 @@ impl Layout {
         world: &mut World<Termx>,
         bounds: Rect,
     ) {
-        let (a_size, max_size, min_size) = {
-            let layout = this.layout();
-            let component = entity.get(layout.layout_view, world).unwrap();
-            let max_width = component.width().or(component.max_width());
-            let max_height = component.height().or(component.max_height());
-            let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
-            let min_size = Vector {
-                x: component.width().unwrap_or(component.min_size().x),
-                y: component.height().unwrap_or(component.min_size().y),
-            };
-            if Some(bounds.size) == component.arrange_size {
-                (None, max_size, min_size)
-            } else {
-                let a_size = component.margin().shrink_rect_size(bounds.size).min(max_size).max(min_size);
-                let d_size = component.margin().shrink_rect_size(component.desired_size);
-                (Some((a_size, component.h_align(), component.v_align(), d_size)), max_size, min_size)
-            }
-        };
-        let render_size = if let Some((a_size, h_align, v_align, desired_size)) = a_size {
-            let a_size = Vector {
-                x: if h_align == ViewHAlign::Stretch { a_size.x } else { desired_size.x },
-                y: if v_align == ViewVAlign::Stretch { a_size.y } else { desired_size.y }
-            };
-            let render_size = this.arrange_override(
-                entity, world, Rect { tl: Point { x: 0, y: 0 }, size: a_size }
-            );
-            let layout = this.layout();
-            let component = entity.get(layout.layout_view, world).unwrap();
-            component.margin().expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
+        let layout = this.layout();
+        let collapsed = entity.get(layout.view, world).unwrap().visibility() == Visibility::Collapsed;
+        let (render_bounds, real_render_bounds) = if collapsed {
+            let rect = Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() };
+            (rect, rect)
         } else {
-            let layout = this.layout();
-            let component = entity.get(layout.layout_view, world).unwrap();
-            component.render_bounds.size
-        };
-        let (render_bounds, real_render_bounds) = {
-            let layout = this.layout();
+            let (a_size, max_size, min_size) = {
+                let component = entity.get(layout.layout_view, world).unwrap();
+                let max_width = component.width().or(component.max_width());
+                let max_height = component.height().or(component.max_height());
+                let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
+                let min_size = Vector {
+                    x: component.width().unwrap_or(component.min_size().x),
+                    y: component.height().unwrap_or(component.min_size().y),
+                };
+                if Some(bounds.size) == component.arrange_size {
+                    (None, max_size, min_size)
+                } else {
+                    let a_size = component.margin().shrink_rect_size(bounds.size).min(max_size).max(min_size);
+                    let d_size = component.margin().shrink_rect_size(component.desired_size);
+                    (Some((a_size, component.h_align(), component.v_align(), d_size)), max_size, min_size)
+                }
+            };
+            let render_size = if let Some((a_size, h_align, v_align, desired_size)) = a_size {
+                let a_size = Vector {
+                    x: if h_align == ViewHAlign::Stretch { a_size.x } else { desired_size.x },
+                    y: if v_align == ViewVAlign::Stretch { a_size.y } else { desired_size.y }
+                };
+                let render_size = this.arrange_override(
+                    entity, world, Rect { tl: Point { x: 0, y: 0 }, size: a_size }
+                );
+                let layout = this.layout();
+                let component = entity.get(layout.layout_view, world).unwrap();
+                component.margin().expand_rect_size(render_size.min(max_size).max(min_size)).min(bounds.size)
+            } else {
+                let layout = this.layout();
+                let component = entity.get(layout.layout_view, world).unwrap();
+                component.render_bounds.size
+            };
             let component = entity.get(layout.layout_view, world).unwrap();
             let h_align = <Option<HAlign>>::from(component.h_align()).unwrap_or(HAlign::Left);
             let v_align = <Option<VAlign>>::from(component.v_align()).unwrap_or(VAlign::Top);

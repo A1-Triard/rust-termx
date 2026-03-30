@@ -156,3 +156,7 @@ pub fn serialize_color<S: Serializer>(value: &Option<(Fg, Bg)>, serializer: S) -
         value.serialize(serializer)
     }
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize)]
+pub enum Visibility { Visible, Hidden, Collapsed }

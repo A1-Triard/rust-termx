@@ -2,7 +2,7 @@ use alloc::rc::Rc;
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use core::cmp::min;
-use crate::base::label_width;
+use crate::base::{label_width, Visibility};
 use crate::components::background::Background;
 use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
@@ -215,15 +215,11 @@ impl Render {
         world: &World<Termx>,
         rp: &mut RenderPort,
     ) {
-        if rp.invalidated_rect.intersect(rp.bounds).is_empty() {
-            return;
-        }
-        //if view.visibility() != Visibility::Visible { return; }
+        if rp.invalidated_rect.intersect(rp.bounds).is_empty() { return; }
         let render = this.render();
-        let render_bounds = Rect {
-            tl: Point { x: 0, y: 0 },
-            size: entity.get(render.view, world).unwrap().real_render_bounds.size
-        };
+        let view = entity.get(render.view, world).unwrap();
+        if view.visibility() != Visibility::Visible { return; }
+        let render_bounds = Rect { tl: Point { x: 0, y: 0 }, size: view.real_render_bounds.size };
         this.render_view(entity, world, rp, render_bounds);
         let base_offset = rp.offset;
         let base_bounds = rp.bounds;

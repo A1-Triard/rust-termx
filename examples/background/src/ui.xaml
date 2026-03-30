@@ -5,7 +5,7 @@
         <CanvasLayout Tl="10,5" />
       </TButton.Layout>
     </TButton>
-    <TButton Text="~C~ancel">
+    <TButton Text="~C~ancel" Visibility="Collapsed">
       <TButton.Layout>
         <CanvasLayout Tl="10,8" />
       </TButton.Layout>

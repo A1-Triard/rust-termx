@@ -1,7 +1,10 @@
 use alloc::rc::Rc;
 use alloc::string::String;
+use core::mem::replace;
+use crate::base::Visibility;
 use crate::{property_rw, property_ro};
 use crate::systems::layout::LayoutExt;
+use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
 use int_vec_2d::{Rect, Point, Vector};
 use ooecs::Entity;
@@ -13,6 +16,7 @@ pub struct View {
     render: u16,
     pub name: String,
     layout: Option<Entity<Termx>>,
+    visibility: Visibility,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -32,6 +36,7 @@ impl View {
             render,
             name: String::new(),
             layout: None,
+            visibility: Visibility::Visible,
         }
     }
 
@@ -69,6 +74,31 @@ impl View {
             termx.systems().layout.invalidate_measure(parent, &mut world);
         }
     }
+
+    property_ro!(Termx, view, visibility, Visibility);
+
+    pub fn set_visibility(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Visibility) {
+        let termx = termx.termx();
+        let component = termx.components().view;
+        let mut world = termx.world.borrow_mut();
+        let view = entity.get_mut(component, &mut world).unwrap();
+        let old_visibility = replace(&mut view.visibility, value);
+        let (invalidate_measure, invalidate_render) = match (old_visibility, value) {
+            (Visibility::Visible, Visibility::Collapsed) => (true, false),
+            (Visibility::Visible, Visibility::Hidden) => (false, true),
+            (Visibility::Hidden, Visibility::Visible) => (false, true),
+            (Visibility::Hidden, Visibility::Collapsed) => (true, false),
+            (Visibility::Collapsed, Visibility::Visible) => (true, false),
+            (Visibility::Collapsed, Visibility::Hidden) => (true, false),
+            _ => (false, false),
+        };
+        if invalidate_measure {
+            termx.systems().layout.invalidate_measure(entity, &mut world);
+        }
+        if invalidate_render {
+            termx.systems().render.invalidate_render(entity, &mut world);
+        }
+    }
 }
 
 #[doc(hidden)]
@@ -100,6 +130,9 @@ macro_rules! view_template {
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
                 pub layout: Option<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub visibility: Option<$crate::base::Visibility>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -119,5 +152,6 @@ macro_rules! view_apply_template {
             $termx,
             Some(x.load_content_inline($termx, $names))
         ));
+        $this.visibility.map(|x| $crate::components::view::View::set_visibility($entity, $termx, x));
     };
 }
