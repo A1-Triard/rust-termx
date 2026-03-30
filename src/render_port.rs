@@ -53,6 +53,60 @@ impl<'a> RenderPort<'a> {
         }
     }
 
+    pub fn half_shadow(&mut self, p: Point, text: &str) {
+        let screen_size = self.screen.size();
+        let p = p.offset(self.offset);
+        if !self.bounds.v_range().contains(p.y) { return; }
+        if !self.invalidated_rect.v_range().contains(p.y) { return; }
+        if p.y < 0 || p.y >= screen_size.y { return; }
+        if p.x >= self.bounds.r() || p.x >= self.invalidated_rect.r() { return; } // don't screen do same check?
+        let rendered = self.screen.out(
+            p,
+            Fg::Black,
+            Bg::Black,
+            text,
+            self.bounds.h_range(),
+            self.invalidated_rect.h_range(),
+            OutMode::KEEP_BG,
+        );
+        self.invalidated_rect = self.invalidated_rect.union_intersect(
+            Rect::from_h_v_ranges(rendered, Range1d { start: p.y, end: p.y.wrapping_add(1) }),
+            Rect { tl: Point { x: 0, y: 0 }, size: screen_size }
+        );
+        if let Some(cursor) = self.cursor {
+            if p.y == cursor.y && rendered.contains(cursor.x) {
+                self.cursor = None;
+            }
+        }
+    }
+
+    pub fn full_shadow(&mut self, p: Point) {
+        let screen_size = self.screen.size();
+        let p = p.offset(self.offset);
+        if !self.bounds.v_range().contains(p.y) { return; }
+        if !self.invalidated_rect.v_range().contains(p.y) { return; }
+        if p.y < 0 || p.y >= screen_size.y { return; }
+        if p.x >= self.bounds.r() || p.x >= self.invalidated_rect.r() { return; } // don't screen do same check?
+        let rendered = self.screen.out(
+            p,
+            Fg::LightGray,
+            Bg::Black,
+            " ",
+            self.bounds.h_range(),
+            self.invalidated_rect.h_range(),
+            OutMode::KEEP_TEXT,
+        );
+        self.invalidated_rect = self.invalidated_rect.union_intersect(
+            Rect::from_h_v_ranges(rendered, Range1d { start: p.y, end: p.y.wrapping_add(1) }),
+            Rect { tl: Point { x: 0, y: 0 }, size: screen_size }
+        );
+        if let Some(cursor) = self.cursor {
+            if p.y == cursor.y && rendered.contains(cursor.x) {
+                self.cursor = None;
+            }
+        }
+    }
+
     pub fn cursor(&mut self, p: Point) {
         let screen_size = self.screen.size();
         let p = p.offset(self.offset);
