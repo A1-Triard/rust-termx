@@ -97,10 +97,7 @@ macro_rules! panel_template {
 macro_rules! panel_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
         $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
-        $crate::components::panel::Panel::get_children_mut($entity, $termx, |children| {
-            for child in &$this.children {
-                children.push(child.load_content_inline($termx, $names));
-            }
-        });
+        let children = $this.children.iter().map(|x| x.load_content_inline($termx, $names)).collect();
+        $crate::components::panel::Panel::set_children($entity, $termx, &children);
     };
 }

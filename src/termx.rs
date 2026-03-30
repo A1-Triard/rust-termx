@@ -111,7 +111,7 @@ impl Termx {
         let stack_panel: Component<StackPanel, Termx> = Component::new(panel, &mut world);
         let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, &mut world);
         let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
-        let t_button: Component<TButton, Termx> = Component::new(view_layout, &mut world);
+        let t_button: Component<TButton, Termx> = Component::new(layout_view, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
