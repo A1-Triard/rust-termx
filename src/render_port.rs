@@ -33,6 +33,26 @@ impl<'a> RenderPort<'a> {
         }
     }
 
+    pub fn label_in_rect(&mut self, rect: Rect, color: (Fg, Bg), color_hotkey: (Fg, Bg), text: &str) {
+        let mut p = rect.tl;
+        let mut hotkey = false;
+        for (first, last, text) in text.split('~').identify_first_last() {
+            if !first && !text.is_empty() {
+                hotkey = !hotkey;
+            }
+            let actual_text = if !first && !last && text.is_empty() { "~" } else { text };
+            self.text_in_rect(
+                Rect::from_tl_br(p, rect.br()),
+                if hotkey { color_hotkey } else { color },
+                actual_text
+            );
+            p = p.offset(Vector { x: text_width(actual_text), y: 0 });
+            if !first && text.is_empty() {
+                hotkey = !hotkey;
+            }
+        }
+    }
+
     pub fn text(&mut self, p: Point, color: (Fg, Bg), text: &str) {
         let screen_size = self.screen.size();
         let p = p.offset(self.offset);

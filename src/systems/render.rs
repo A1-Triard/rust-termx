@@ -69,7 +69,7 @@ fn render_t_button(
     let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
     let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
     rp.fill_rect(bg_bounds, |rp, p| rp.text(p, t_button.color(), " "));
-    rp.text_in_rect(text_bounds, t_button.color(), t_button.text());
+    rp.label_in_rect(text_bounds, t_button.color(), t_button.color_hotkey(), t_button.text());
     rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
     rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
     rp.half_shadow(inner_bounds.tr_inner(), "▄");

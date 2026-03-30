@@ -11,6 +11,7 @@ use ooecs::Entity;
 pub struct TButton {
     text: String,
     color: (Fg, Bg),
+    color_hotkey: (Fg, Bg),
 }
 
 impl TButton {
@@ -18,6 +19,7 @@ impl TButton {
         TButton {
             text: String::new(),
             color: (Fg::Black, Bg::Green),
+            color_hotkey: (Fg::Yellow, Bg::Green),
         }
     }
 
@@ -36,6 +38,7 @@ impl TButton {
 
     property!(Termx, t_button, text, ref String as &str, @measure);
     property!(Termx, t_button, color, (Fg, Bg), @render);
+    property!(Termx, t_button, color_hotkey, (Fg, Bg), @render);
 }
 
 #[macro_export]
@@ -65,6 +68,11 @@ macro_rules! t_button_template {
                 #[serde(serialize_with="components_t_button_serialize_color")]
                 #[serde(deserialize_with="components_t_button_deserialize_color")]
                 pub color: Option<($crate::base::Fg, $crate::base::Bg)>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_t_button_serialize_color")]
+                #[serde(deserialize_with="components_t_button_deserialize_color")]
+                pub color_hotkey: Option<($crate::base::Fg, $crate::base::Bg)>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -82,6 +90,7 @@ macro_rules! t_button_apply_template {
             $crate::components::t_button::TButton::set_text($entity, $termx, x.clone())
         );
         $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $termx, x));
+        $this.color_hotkey.map(|x| $crate::components::t_button::TButton::set_color_hotkey($entity, $termx, x));
     };
 }
 
