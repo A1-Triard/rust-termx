@@ -605,7 +605,7 @@ macro_rules! layout_property {
 mod tests {
     use alloc::string::ToString;
     use crate::components::background::{Background, BackgroundTemplate};
-    use crate::components::view_layout::ViewLayout;
+    use crate::components::layout_view::LayoutView;
     use crate::systems::layout::LayoutExt;
     use crate::template::Template;
     use crate::termx::Termx;
@@ -633,6 +633,6 @@ mod tests {
             .. Default::default()
         }.load_content(&termx);
         assert_eq!(&Background::get_pattern(bg, &termx, |x| x.to_string()), "x");
-        assert_eq!(ViewLayout::get_width(bg, &termx), Some(20));
+        assert_eq!(LayoutView::get_width(bg, &termx), Some(20));
     }
 }
