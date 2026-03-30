@@ -42,6 +42,8 @@ pub struct Layout {
     ) -> Vector,
     #[virt]
     arrange_override: fn(entity: Entity<Termx>, world: &mut World<Termx>, inner_bounds: Rect) -> Vector,
+    #[virt]
+    shadow_override: fn(entity: Entity<Termx>, world: &World<Termx>) -> Thickness,
     #[non_virt]
     invalidate_measure: fn(entity: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
@@ -292,6 +294,18 @@ impl Layout {
         }
     }
 
+    pub fn shadow_override_impl(
+        this: &Rc<dyn IsLayout>,
+        entity: Entity<Termx>,
+        world: &World<Termx>
+    ) -> Thickness {
+        let layout = this.layout();
+        match entity.get(layout.layout_view, world).unwrap().layout() {
+            LAYOUT_T_BUTTON => Thickness::new(0, 0, 1, 1),
+            _ => Thickness::all(0),
+        }
+    }
+
     pub fn invalidate_measure_impl(
         this: &Rc<dyn IsLayout>,
         mut entity: Entity<Termx>,
@@ -414,7 +428,8 @@ impl Layout {
             let v_align = <Option<VAlign>>::from(component.v_align()).unwrap_or(VAlign::Top);
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
             let render_bounds = align.shrink_rect(bounds);
-            let real_render_bounds = component.margin().shrink_rect(render_bounds);
+            let shadow = this.shadow_override(entity, world);
+            let real_render_bounds = shadow.expand_rect(component.margin().shrink_rect(render_bounds));
             (render_bounds, real_render_bounds)
         };
         let layout = this.layout();

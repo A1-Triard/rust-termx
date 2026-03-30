@@ -7,7 +7,7 @@ use crate::components::decorator::Decorator;
 use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
-use int_vec_2d::{Vector, Point, Rect};
+use int_vec_2d::{Vector, Point, Rect, Thickness};
 use ooecs::Component;
 
 import! { pub render:
@@ -32,7 +32,7 @@ pub struct Render {
     #[virt]
     visual_child: fn(entity: Entity<Termx>, world: &World<Termx>, index: usize) -> Entity<Termx>,
     #[virt]
-    render_view: fn(entity: Entity<Termx>, world: &World<Termx>, rp: &mut RenderPort),
+    render_view: fn(entity: Entity<Termx>, world: &World<Termx>, rp: &mut RenderPort, inner_bounds: Rect),
     #[non_virt]
     add_visual_child: fn(parent: Entity<Termx>, child: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
@@ -47,7 +47,8 @@ fn render_background(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
     world: &World<Termx>,
-    rp: &mut RenderPort
+    rp: &mut RenderPort,
+    _inner_bounds: Rect,
 ) {
     let render = this.render();
     let background = entity.get(render.background, world).unwrap();
@@ -58,11 +59,15 @@ fn render_t_button(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
     world: &World<Termx>,
-    rp: &mut RenderPort
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
 ) {
     let render = this.render();
     let t_button = entity.get(render.t_button, world).unwrap();
-    rp.fill(|rp, p| rp.text(p, t_button.color(), " "));
+    let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
+    let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
+    rp.fill_rect(bg_bounds, |rp, p| rp.text(p, t_button.color(), " "));
+    rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
 }
 
 impl Render {
@@ -148,12 +153,13 @@ impl Render {
         this: &Rc<dyn IsRender>,
         entity: Entity<Termx>,
         world: &World<Termx>,
-        rp: &mut RenderPort
+        rp: &mut RenderPort,
+        inner_bounds: Rect,
     ) {
         let render = this.render();
         match entity.get(render.view, world).unwrap().render() {
-            RENDER_BACKGROUND => render_background(this, entity, world, rp),
-            RENDER_T_BUTTON => render_t_button(this, entity, world, rp),
+            RENDER_BACKGROUND => render_background(this, entity, world, rp, inner_bounds),
+            RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }
@@ -199,8 +205,12 @@ impl Render {
             return;
         }
         //if view.visibility() != Visibility::Visible { return; }
-        this.render_view(entity, world, rp);
         let render = this.render();
+        let render_bounds = Rect {
+            tl: Point { x: 0, y: 0 },
+            size: entity.get(render.view, world).unwrap().real_render_bounds.size
+        };
+        this.render_view(entity, world, rp, render_bounds);
         let base_offset = rp.offset;
         let base_bounds = rp.bounds;
         for i in 0 .. this.visual_children_count(entity, world) {
