@@ -91,7 +91,7 @@ impl<'a> RenderPort<'a> {
             p,
             Fg::LightGray,
             Bg::Black,
-            " ",
+            "x",
             self.bounds.h_range(),
             self.invalidated_rect.h_range(),
             OutMode::KEEP_TEXT,
