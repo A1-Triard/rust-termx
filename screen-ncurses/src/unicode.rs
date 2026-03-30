@@ -190,7 +190,7 @@ impl<A: Allocator> base_Screen for Screen<A> {
         text: &str,
         hard: Range1d,
         soft: Range1d,
-        mode: Mode,
+        mode: OutMode,
     ) -> Range1d {
         debug_assert!(p.y >= 0 && p.y < self.size().y);
         debug_assert!(hard.start >= 0 && hard.end > hard.start && hard.end <= self.size().x);
@@ -199,7 +199,7 @@ impl<A: Allocator> base_Screen for Screen<A> {
         let text_start = if soft.start <= p.x { 0 } else { soft.start.saturating_sub(p.x) };
         let line = &mut self.chs[usize::from(p.y as u16) * self.cols .. (usize::from(p.y as u16) + 1) * self.cols];
         self.lines[p.y as u16 as usize].invalidated = true;
-        let attr = if mode.contains(Mode::KEEP_BG) || mode.contains(Mode::KEEP_FG) {
+        let attr = if mode.contains(OutMode::KEEP_BG) || mode.contains(OutMode::KEEP_FG) {
             None
         } else {
             Some(unsafe { attr_ch(fg, bg) })
@@ -258,7 +258,7 @@ impl<A: Allocator> base_Screen for Screen<A> {
                 break;
             }
             let col = &mut line[x as u16 as usize];
-            if !mode.contains(Mode::KEEP_TEXT) {
+            if !mode.contains(OutMode::KEEP_TEXT) {
                 col.0 = g;
             }
             col.1 = attr.unwrap_or_else(|| unsafe { attr_ch_2(fg, bg, col.1, mode) });

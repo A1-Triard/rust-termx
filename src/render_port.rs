@@ -1,5 +1,5 @@
 use iter_identify_first_last::IteratorIdentifyFirstLastExt;
-use crate::base::{Vector, Rect, Point, Range1d, Screen, Fg, Bg, text_width};
+use crate::base::{Vector, Rect, Point, Range1d, Screen, Fg, Bg, text_width, OutMode};
 
 pub struct RenderPort<'a> {
     pub(crate) screen: &'a mut dyn Screen,
@@ -19,7 +19,7 @@ impl<'a> RenderPort<'a> {
         if p.y < 0 || p.y >= screen_size.y { return; }
         if p.x >= bounds.r() || p.x >= self.invalidated_rect.r() { return; } // don't screen do same check?
         let rendered = self.screen.out(
-            p, color.0, color.1, text, bounds.h_range(), self.invalidated_rect.h_range()
+            p, color.0, color.1, text, bounds.h_range(), self.invalidated_rect.h_range(), OutMode::empty()
         );
         self.invalidated_rect = self.invalidated_rect.union_intersect(
             Rect::from_h_v_ranges(rendered, Range1d { start: p.y, end: p.y.wrapping_add(1) }),
@@ -40,7 +40,7 @@ impl<'a> RenderPort<'a> {
         if p.y < 0 || p.y >= screen_size.y { return; }
         if p.x >= self.bounds.r() || p.x >= self.invalidated_rect.r() { return; } // don't screen do same check?
         let rendered = self.screen.out(
-            p, color.0, color.1, text, self.bounds.h_range(), self.invalidated_rect.h_range()
+            p, color.0, color.1, text, self.bounds.h_range(), self.invalidated_rect.h_range(), OutMode::empty()
         );
         self.invalidated_rect = self.invalidated_rect.union_intersect(
             Rect::from_h_v_ranges(rendered, Range1d { start: p.y, end: p.y.wrapping_add(1) }),

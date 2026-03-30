@@ -88,15 +88,15 @@ pub unsafe fn attr_ch(fg: Fg, bg: Bg) -> chtype {
     fg_attr(fg) | color as chtype
 }
 
-pub unsafe fn attr_ch_2(fg: Fg, bg: Bg, old_ch: chtype, mode: Mode) -> chtype {
+pub unsafe fn attr_ch_2(fg: Fg, bg: Bg, old_ch: chtype, mode: OutMode) -> chtype {
     let attr = (old_ch & A_ATTRIBUTES) & !A_COLOR;
     let pair = unsafe { PAIR_NUMBER((old_ch & A_COLOR) as _) };
     let mut old_fg: c_short = 0;
     let mut old_bg: c_short = 0;
     unsafe { non_err(pair_content(pair as _, &raw mut old_fg, &raw mut old_bg)).unwrap(); }
-    let attr = if mode.contains(Mode::KEEP_FG) { attr } else { fg_attr(fg) };
-    let fg = if mode.contains(Mode::KEEP_FG) { old_fg } else { fg_index(fg) };
-    let bg = if mode.contains(Mode::KEEP_BG) { old_bg } else { bg_index(bg) };
+    let attr = if mode.contains(OutMode::KEEP_FG) { attr } else { fg_attr(fg) };
+    let fg = if mode.contains(OutMode::KEEP_FG) { old_fg } else { fg_index(fg) };
+    let bg = if mode.contains(OutMode::KEEP_BG) { old_bg } else { bg_index(bg) };
     let color = COLOR_PAIR((1 + (bg + 1) * 8 + fg) as _);
     attr | (color as chtype)
 }

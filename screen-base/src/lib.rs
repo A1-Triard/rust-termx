@@ -288,7 +288,7 @@ impl Debug for Error {
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub struct Mode: u8 {
+    pub struct OutMode: u8 {
         const KEEP_TEXT = 1;
         const KEEP_BG = 2;
         const KEEP_FG = 4;
@@ -306,7 +306,7 @@ pub trait Screen {
         text: &str,
         hard: Range1d,
         soft: Range1d,
-        mode: Mode,
+        mode: OutMode,
     ) -> Range1d;
 
     fn update(&mut self, cursor: Option<Point>, wait: bool) -> Result<Option<Event>, Error>;
