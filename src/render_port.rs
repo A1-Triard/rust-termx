@@ -12,7 +12,8 @@ pub struct RenderPort<'a> {
 impl<'a> RenderPort<'a> {
     pub fn text_in_rect(&mut self, rect: Rect, color: (Fg, Bg), text: &str) {
         let screen_size = self.screen.size();
-        let p = rect.tl.offset(self.offset);
+        let rect = rect.offset(self.offset);
+        let p = rect.tl;
         let bounds = rect.intersect(self.bounds);
         if !bounds.v_range().contains(p.y) { return; }
         if !self.invalidated_rect.v_range().contains(p.y) { return; }
@@ -126,6 +127,7 @@ impl<'a> RenderPort<'a> {
     }
 
     pub fn fill_rect(&mut self, rect: Rect, mut f: impl FnMut(&mut Self, Point)) {
+        let rect = rect.offset(self.offset);
         for p in rect.intersect(self.bounds.intersect(self.invalidated_rect)).points() {
             f(self, p.offset(-self.offset));
         }

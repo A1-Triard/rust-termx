@@ -56,6 +56,8 @@ macro_rules! background_template {
         $crate::decorator_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
+                use $crate::base::serialize_color as components_background_serialize_color;
+                use $crate::base::deserialize_color as components_background_deserialize_color;
                 $(use $path as $import;)*
 
                 #[serde(default)]
@@ -63,6 +65,8 @@ macro_rules! background_template {
                 pub pattern: Option<$crate::alloc_string_String>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_background_serialize_color")]
+                #[serde(deserialize_with="components_background_deserialize_color")]
                 pub color: Option<($crate::base::Fg, $crate::base::Bg)>,
                 $($(
                     $(#[$field_attr])*

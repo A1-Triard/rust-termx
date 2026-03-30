@@ -53,6 +53,8 @@ macro_rules! t_button_template {
         $crate::layout_view_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
+                use $crate::base::serialize_color as components_t_button_serialize_color;
+                use $crate::base::deserialize_color as components_t_button_deserialize_color;
                 $(use $path as $import;)*
 
                 #[serde(default)]
@@ -60,6 +62,8 @@ macro_rules! t_button_template {
                 pub text: Option<$crate::alloc_string_String>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_t_button_serialize_color")]
+                #[serde(deserialize_with="components_t_button_deserialize_color")]
                 pub color: Option<($crate::base::Fg, $crate::base::Bg)>,
                 $($(
                     $(#[$field_attr])*

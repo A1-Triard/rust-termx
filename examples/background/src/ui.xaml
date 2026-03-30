@@ -1,5 +1,9 @@
-<Background xmlns='https://a1-triard.github.io/termx/2026/xaml'>
+<Background xmlns='https://a1-triard.github.io/termx/2026/xaml' Color="Black/LightGray" Pattern=" ">
   <Canvas>
-    <TButton Text="Cancel" />
+    <TButton Text="Cancel">
+      <TButton.Layout>
+        <CanvasLayout Tl="10,5" />
+      </TButton.Layout>
+    </TButton>
   </Canvas>
 </Background>

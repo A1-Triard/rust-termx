@@ -1,5 +1,9 @@
+use alloc::format;
+use alloc::string::String;
+use core::str::FromStr;
 use iter_identify_first_last::IteratorIdentifyFirstLastExt;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, Deserializer, Serializer};
+use serde::de::{self};
 
 pub use int_vec_2d::*;
 pub use termx_screen_base::*;
@@ -120,5 +124,35 @@ impl From<Option<VAlign>> for ViewVAlign {
             Some(VAlign::Bottom) => ViewVAlign::Bottom,
             None => ViewVAlign::Stretch,
         }
+    }
+}
+
+pub fn deserialize_color<'de, D: Deserializer<'de>>(
+    deserializer: D
+) -> Result<Option<(Fg, Bg)>, D::Error> {
+    if deserializer.is_human_readable() {
+        let s = String::deserialize(deserializer)?;
+        if s.is_empty() { return Ok(None); };
+        let mut parts = s.split('/');
+        let fg = parts.next().ok_or_else(|| de::Error::custom("invalid color"))?;
+        let bg = parts.next().ok_or_else(|| de::Error::custom("invalid color"))?;
+        if parts.next().is_some() { return Err(de::Error::custom("invalid color")); }
+        let fg = Fg::from_str(fg).map_err(|_| de::Error::custom("invalid color"))?;
+        let bg = Bg::from_str(bg).map_err(|_| de::Error::custom("invalid color"))?;
+        Ok(Some((fg, bg)))
+    } else {
+        <Option<(Fg, Bg)>>::deserialize(deserializer)
+    }
+}
+
+pub fn serialize_color<S: Serializer>(value: &Option<(Fg, Bg)>, serializer: S) -> Result<S::Ok, S::Error> {
+    if serializer.is_human_readable() {
+        if let Some((fg, bg)) = value {
+            format!("{fg}/{bg}").serialize(serializer)
+        } else {
+            "".serialize(serializer)
+        }
+    } else {
+        value.serialize(serializer)
     }
 }
