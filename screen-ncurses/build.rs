@@ -43,6 +43,9 @@ fn generate_curses_types_rs(lib: &Library) {
 int main() {
     printf("pub type chtype = u%zd;\n", sizeof(chtype) * CHAR_BIT);
     printf("pub type wint_t = u%zd;\n", sizeof(wint_t) * CHAR_BIT);
+    printf("pub const A_COLOR: chtype = %lu;\n", (unsigned long)A_COLOR);
+    printf("pub const A_ATTRIBUTES: chtype = %lu;\n", (unsigned long)A_ATTRIBUTES);
+    printf("pub const A_CHARTEXT: chtype = %lu;\n", (unsigned long)A_CHARTEXT);
     printf("pub const CCHARW_MAX: usize = %d;\n", CCHARW_MAX);
     printf("pub const BUTTON1_PRESSED: c_ulong = %lu;\n", (unsigned long)BUTTON1_PRESSED);
     printf("pub const BUTTON1_RELEASED: c_ulong = %lu;\n", (unsigned long)BUTTON1_RELEASED);

@@ -268,7 +268,8 @@ impl<A: Allocator> base_Screen for Screen<A> {
         bg: Bg,
         text: &str,
         hard: Range1d,
-        soft: Range1d
+        soft: Range1d,
+        mode: Mode,
     ) -> Range1d {
         debug_assert!(p.y >= 0 && p.y < self.size().y);
         debug_assert!(hard.start >= 0 && hard.end > hard.start && hard.end <= self.size().x);
@@ -277,7 +278,11 @@ impl<A: Allocator> base_Screen for Screen<A> {
         let text_start = if soft.start <= p.x { 0 } else { soft.start.saturating_sub(p.x) };
         let chs = &mut self.chs[usize::from(p.y as u16) * self.cols .. (usize::from(p.y as u16) + 1) * self.cols];
         self.lines[p.y as u16 as usize].invalidated = true;
-        let attr = unsafe { attr_ch(fg, bg) };
+        let attr = if mode.contains(Mode::KEEP_BG) || mode.contains(Mode::KEEP_FG) {
+            None
+        } else {
+            Some(unsafe { attr_ch(fg, bg) })
+        };
         let text = graphemes(text).map(|(g, _)| text[g].chars().nfc().next().unwrap())
             .flat_map(|c| encode_char(self.cd, c).map_or_else(
                 || Left(repeat(A_ALTCHARSET | 96).take(c.width().unwrap())),
@@ -304,7 +309,10 @@ impl<A: Allocator> base_Screen for Screen<A> {
                 true
             };
             if visible_1 && visible_2 {
-                chs[x as u16 as usize] = c | attr;
+                chs[x as u16 as usize]
+                    = if mode.contains(Mode::KEEP_TEXT) { chs[x as u16 as usize] & A_CHARTEXT } else { c }
+                    | attr.unwrap_or_else(|| unsafe { attr_ch_2(fg, bg, chs[x as u16 as usize], mode) })
+                ;
             }
             x += 1;
         }

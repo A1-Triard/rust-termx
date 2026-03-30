@@ -64,6 +64,7 @@ pub struct MEVENT {
 
 extern "C" {
     pub fn COLOR_PAIR(arg1: c_int) -> c_int;
+    pub fn PAIR_NUMBER(arg1: c_int) -> c_int;
     #[must_use]
     pub fn cbreak() -> c_int;
     #[must_use]
@@ -91,6 +92,12 @@ extern "C" {
         arg1: c_short,
         arg2: c_short,
         arg3: c_short,
+    ) -> c_int;
+    #[must_use]
+    pub fn pair_content(
+        arg1: c_short,
+        arg2: *mut c_short,
+        arg3: *mut c_short,
     ) -> c_int;
     #[must_use]
     pub fn keypad(arg1: *mut WINDOW, arg2: bool) -> c_int;
