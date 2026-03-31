@@ -6,6 +6,7 @@ use crate::base::{label_width, Visibility};
 use crate::components::background::Background;
 use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
+use crate::components::focus_scope::FocusScope;
 use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
@@ -26,6 +27,7 @@ pub struct Render {
     pub panel: Component<Panel, Termx>,
     pub background: Component<Background, Termx>,
     pub t_button: Component<TButton, Termx>,
+    pub focus_scope: Component<FocusScope, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
@@ -35,6 +37,8 @@ pub struct Render {
     visual_child: fn(entity: Entity<Termx>, world: &World<Termx>, index: usize) -> Entity<Termx>,
     #[virt]
     render_view: fn(entity: Entity<Termx>, world: &World<Termx>, rp: &mut RenderPort, inner_bounds: Rect),
+    #[virt]
+    is_enabled_changed: fn(entity: Entity<Termx>, world: &mut World<Termx>, is_enabled: bool),
     #[non_virt]
     add_visual_child: fn(parent: Entity<Termx>, child: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
@@ -91,6 +95,7 @@ impl Render {
         panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
         t_button: Component<TButton, Termx>,
+        focus_scope: Component<FocusScope, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
             view,
@@ -98,6 +103,7 @@ impl Render {
             panel,
             background,
             t_button,
+            focus_scope,
             RENDER_VTABLE.as_ptr(),
         ) })
     }
@@ -108,6 +114,7 @@ impl Render {
         panel: Component<Panel, Termx>,
         background: Component<Background, Termx>,
         t_button: Component<TButton, Termx>,
+        focus_scope: Component<FocusScope, Termx>,
         vtable: Vtable,
     ) -> Self {
         Render {
@@ -117,6 +124,7 @@ impl Render {
             panel,
             background,
             t_button,
+            focus_scope,
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
             screen_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
@@ -178,6 +186,33 @@ impl Render {
         }
     }
 
+    pub fn is_enabled_changed_impl(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        is_enabled: bool,
+    ) {
+        let render = this.render();
+        this.invalidate_render(entity, world);
+        let children_count = this.visual_children_count(entity, world);
+        for i in 0 .. children_count {
+            let child = this.visual_child(entity, world, i);
+            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+                if focus_scope.is_enabled_core {
+                    focus_scope.parent_is_enabled = is_enabled;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+            if changed {
+                this.is_enabled_changed(child, world, is_enabled);
+            }
+        }
+    }
+
     pub fn add_visual_child_impl(
         this: &Rc<dyn IsRender>,
         parent: Entity<Termx>,
@@ -187,6 +222,22 @@ impl Render {
         let render = this.render();
         child.get_mut(render.view, world).unwrap().visual_parent = Some(parent);
         this.invalidate_render(child, world);
+        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(render.focus_scope, world) {
+            parent_focus_scope.is_enabled()
+        } else {
+            true
+        };
+        if !parent_is_enabled {
+            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+                focus_scope.parent_is_enabled = false;
+                focus_scope.is_enabled_core
+            } else {
+                false
+            };
+            if changed {
+                this.is_enabled_changed(child, world, false);
+            }
+        }
     }
 
     pub fn remove_visual_child_impl(
@@ -200,10 +251,27 @@ impl Render {
         let view = child.get_mut(render.view, world).unwrap();
         assert_eq!(view.visual_parent, Some(parent));
         view.visual_parent = None;
+        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(render.focus_scope, world) {
+            parent_focus_scope.is_enabled()
+        } else {
+            true
+        };
+        if !parent_is_enabled {
+            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+                focus_scope.parent_is_enabled = true;
+                focus_scope.is_enabled_core
+            } else {
+                false
+            };
+            if changed {
+                this.is_enabled_changed(child, world, true);
+            }
+        }
     }
 
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
+        // TODO fix: use global bounds
         let rect = entity.get(render.view, world).unwrap().real_render_bounds;
         let union = render.invalidated_rect.get().union_intersect(rect, render.screen_rect.get());
         render.invalidated_rect.set(union);

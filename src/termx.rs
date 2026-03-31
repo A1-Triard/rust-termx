@@ -11,6 +11,7 @@ use crate::components::view_layout::ViewLayout;
 use crate::components::stack_panel::StackPanel;
 use crate::components::canvas_layout::CanvasLayout;
 use crate::components::canvas::Canvas;
+use crate::components::focus_scope::FocusScope;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use ooecs::{Component, World};
@@ -34,6 +35,7 @@ pub struct TermxComponents {
     pub canvas_layout: Component<CanvasLayout, Termx>,
     pub canvas: Component<Canvas, Termx>,
     pub t_button: Component<TButton, Termx>,
+    pub focus_scope: Component<FocusScope, Termx>,
 }
 
 pub struct TermxSystems {
@@ -112,6 +114,7 @@ impl Termx {
         let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, &mut world);
         let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
         let t_button: Component<TButton, Termx> = Component::new(layout_view, &mut world);
+        let focus_scope: Component<FocusScope, Termx> = Component::new(layout_view, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -123,6 +126,7 @@ impl Termx {
             canvas_layout,
             canvas,
             t_button,
+            focus_scope,
         }));
     }
 
@@ -145,6 +149,7 @@ impl Termx {
             components.as_ref().unwrap().panel,
             components.as_ref().unwrap().background,
             components.as_ref().unwrap().t_button,
+            components.as_ref().unwrap().focus_scope,
         )
     }
 
