@@ -271,9 +271,18 @@ impl Render {
 
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
-        // TODO fix: use global bounds
-        let rect = entity.get(render.view, world).unwrap().real_render_bounds;
-        let union = render.invalidated_rect.get().union_intersect(rect, render.screen_rect.get());
+        let view = entity.get(render.view, world).unwrap();
+        let local_rect = view.real_render_bounds_with_shadow;
+        let mut global_offset = Vector { x: 0, y: 0 };
+        let mut cur = view.visual_parent;
+        while let Some(parent) = cur {
+            let parent_view = parent.get(render.view, world).unwrap();
+            let tl = parent_view.real_render_bounds.tl;
+            global_offset += Vector { x: tl.x, y: tl.y };
+            cur = parent_view.visual_parent;
+        }
+        let global_rect = local_rect.offset(global_offset);
+        let union = render.invalidated_rect.get().union_intersect(global_rect, render.screen_rect.get());
         render.invalidated_rect.set(union);
     }
 
@@ -287,15 +296,19 @@ impl Render {
         let render = this.render();
         let view = entity.get(render.view, world).unwrap();
         if view.visibility() != Visibility::Visible { return; }
-        let render_bounds = Rect { tl: Point { x: 0, y: 0 }, size: view.real_render_bounds.size };
+        let render_bounds = Rect { tl: Point { x: 0, y: 0 }, size: view.real_render_bounds_with_shadow.size };
         this.render_view(entity, world, rp, render_bounds);
         let base_offset = rp.offset;
-        let base_bounds = rp.bounds;
+        let base_bounds = Rect {
+            tl: Point { x: base_offset.x, y: base_offset.y },
+            size: view.real_render_bounds.size,
+        };
         for i in 0 .. this.visual_children_count(entity, world) {
             let child = this.visual_child(entity, world, i);
-            let view = child.get(render.view, world).unwrap();
-            let bounds = view.real_render_bounds.offset(base_offset);
-            rp.bounds = bounds.intersect(base_bounds);
+            let child_view = child.get(render.view, world).unwrap();
+            let bounds = child_view.real_render_bounds.offset(base_offset);
+            let bounds_with_shadow = child_view.real_render_bounds_with_shadow.offset(base_offset);
+            rp.bounds = bounds_with_shadow.intersect(base_bounds);
             rp.offset = Vector { x: bounds.l(), y: bounds.t() };
             Self::render_entity(this, child, world, rp);
         }
@@ -317,12 +330,14 @@ impl Render {
             render.screen_rect.set(Rect { tl: Point { x: 0, y: 0 }, size: screen_size });
             invalidated_rect = Rect { tl: Point { x: 0, y: 0 }, size: screen_size };
         }
-        let bounds = root.get(render.view, world).unwrap().real_render_bounds;
+        let root_view = root.get(render.view, world).unwrap();
+        let root_bounds = root_view.real_render_bounds;
+        let root_bounds_with_shadow = root_view.real_render_bounds_with_shadow;
         let mut rp = RenderPort {
             screen,
             invalidated_rect,
-            bounds: bounds.intersect(Rect { tl: Point { x: 0, y: 0 }, size: screen_size }),
-            offset: Vector { x: bounds.l(), y: bounds.t() },
+            bounds: root_bounds_with_shadow.intersect(Rect { tl: Point { x: 0, y: 0 }, size: screen_size }),
+            offset: Vector { x: root_bounds.l(), y: root_bounds.t() },
             cursor,
         };
         Self::render_entity(this, root, world, &mut rp);

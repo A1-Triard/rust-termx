@@ -394,9 +394,9 @@ impl Layout {
     ) {
         let layout = this.layout();
         let collapsed = entity.get(layout.view, world).unwrap().visibility() == Visibility::Collapsed;
-        let (render_bounds, real_render_bounds) = if collapsed {
+        let (render_bounds, real_render_bounds, real_render_bounds_with_shadow) = if collapsed {
             let rect = Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() };
-            (rect, rect)
+            (rect, rect, rect)
         } else {
             let (a_size, max_size, min_size) = {
                 let component = entity.get(layout.layout_view, world).unwrap();
@@ -437,15 +437,20 @@ impl Layout {
             let align = Thickness::align(render_size, bounds.size, h_align, v_align);
             let render_bounds = align.shrink_rect(bounds);
             let shadow = this.shadow_override(entity, world);
-            let real_render_bounds = shadow.expand_rect(component.margin().shrink_rect(render_bounds));
-            (render_bounds, real_render_bounds)
+            let real_render_bounds = component.margin().shrink_rect(render_bounds);
+            let real_render_bounds_with_shadow = shadow.expand_rect(real_render_bounds);
+            (render_bounds, real_render_bounds, real_render_bounds_with_shadow)
         };
         let layout = this.layout();
-        if real_render_bounds == entity.get(layout.view, world).unwrap().real_render_bounds {
-            let component = entity.get_mut(layout.layout_view, world).unwrap();
-            component.arrange_size = Some(bounds.size);
-            component.render_bounds = render_bounds;
-            return;
+        {
+            let view = entity.get(layout.view, world).unwrap();
+            if real_render_bounds == view.real_render_bounds {
+                debug_assert_eq!(real_render_bounds_with_shadow, view.real_render_bounds_with_shadow);
+                let component = entity.get_mut(layout.layout_view, world).unwrap();
+                component.arrange_size = Some(bounds.size);
+                component.render_bounds = render_bounds;
+                return;
+            }
         }
         let termx = layout.termx.upgrade().unwrap();
         termx.termx().systems().render.invalidate_render(entity, world);
@@ -454,7 +459,11 @@ impl Layout {
             component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }
-        entity.get_mut(layout.view, world).unwrap().real_render_bounds = real_render_bounds;
+        {
+            let view = entity.get_mut(layout.view, world).unwrap();
+            view.real_render_bounds = real_render_bounds;
+            view.real_render_bounds_with_shadow = real_render_bounds_with_shadow;
+        }
         termx.termx().systems().render.invalidate_render(entity, world);
     }
 

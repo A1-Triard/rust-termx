@@ -12,6 +12,7 @@ use ooecs::Entity;
 pub struct View {
     pub(crate) visual_parent: Option<Entity<Termx>>,
     pub(crate) real_render_bounds: Rect,
+    pub(crate) real_render_bounds_with_shadow: Rect,
     tree: u16,
     render: u16,
     pub name: String,
@@ -32,6 +33,7 @@ impl View {
         View {
             visual_parent: None,
             real_render_bounds: Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() },
+            real_render_bounds_with_shadow: Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() },
             tree,
             render,
             name: String::new(),
