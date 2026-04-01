@@ -46,6 +46,10 @@ pub struct Render {
     #[non_virt]
     invalidate_render: fn(entity: Entity<Termx>, world: &World<Termx>),
     #[non_virt]
+    set_visual_offset: fn(entity: Entity<Termx>, world: &mut World<Termx>, value: Vector),
+    #[non_virt]
+    set_shadow: fn(entity: Entity<Termx>, world: &mut World<Termx>, value: Thickness),
+    #[non_virt]
     perform: fn(root: Entity<Termx>, world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
@@ -269,16 +273,44 @@ impl Render {
         }
     }
 
+    pub fn set_visual_offset_impl(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        value: Vector,
+    ) {
+        let render = this.render();
+        this.invalidate_render(entity, world);
+        entity.get_mut(render.view, world).unwrap().visual_offset = value;
+        this.invalidate_render(entity, world);
+    }
+
+    pub fn set_shadow_impl(
+        this: &Rc<dyn IsRender>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        value: Thickness,
+    ) {
+        let render = this.render();
+        this.invalidate_render(entity, world);
+        let real_render_bounds = entity.get(render.view, world).unwrap().real_render_bounds;
+        let view = entity.get_mut(render.view, world).unwrap();
+        view.shadow = value;
+        view.real_render_bounds_with_shadow = value.expand_rect(real_render_bounds);
+        this.invalidate_render(entity, world);
+    }
+
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
         let view = entity.get(render.view, world).unwrap();
         let local_rect = view.real_render_bounds_with_shadow;
-        let mut global_offset = Vector { x: 0, y: 0 };
+        let mut global_offset = view.visual_offset;
         let mut cur = view.visual_parent;
         while let Some(parent) = cur {
             let parent_view = parent.get(render.view, world).unwrap();
             let tl = parent_view.real_render_bounds.tl;
             global_offset += Vector { x: tl.x, y: tl.y };
+            global_offset += parent_view.visual_offset;
             cur = parent_view.visual_parent;
         }
         let global_rect = local_rect.offset(global_offset);
@@ -306,8 +338,10 @@ impl Render {
         for i in 0 .. this.visual_children_count(entity, world) {
             let child = this.visual_child(entity, world, i);
             let child_view = child.get(render.view, world).unwrap();
-            let bounds = child_view.real_render_bounds.offset(base_offset);
-            let bounds_with_shadow = child_view.real_render_bounds_with_shadow.offset(base_offset);
+            let visual_offset = child_view.visual_offset;
+            let bounds = child_view.real_render_bounds.offset(base_offset).offset(visual_offset);
+            let bounds_with_shadow
+                = child_view.real_render_bounds_with_shadow.offset(base_offset).offset(visual_offset);
             rp.bounds = bounds_with_shadow.intersect(base_bounds);
             rp.offset = Vector { x: bounds.l(), y: bounds.t() };
             Self::render_entity(this, child, world, rp);

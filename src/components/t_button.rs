@@ -3,6 +3,8 @@ use alloc::rc::Rc;
 use crate::base::{Fg, Bg};
 use crate::components::view::*;
 use crate::components::layout_view::*;
+use crate::systems::render::RenderExt;
+use int_vec_2d::Thickness;
 use crate::property;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
@@ -33,6 +35,7 @@ impl TButton {
         b.add(view, &mut world, View::new(TREE_NONE, RENDER_T_BUTTON));
         b.add(layout_view, &mut world, LayoutView::new(LAYOUT_T_BUTTON));
         b.add(t_button, &mut world, TButton::new());
+        termx.systems().render.set_shadow(b, &mut world, Thickness::new(0, 0, 1, 1));
         b
     }
 

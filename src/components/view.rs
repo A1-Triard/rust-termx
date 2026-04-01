@@ -6,7 +6,7 @@ use crate::{property_rw, property_ro};
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
-use int_vec_2d::{Rect, Point, Vector};
+use int_vec_2d::{Rect, Point, Vector, Thickness};
 use ooecs::Entity;
 
 pub struct View {
@@ -18,6 +18,8 @@ pub struct View {
     pub name: String,
     layout: Option<Entity<Termx>>,
     visibility: Visibility,
+    pub(crate) visual_offset: Vector,
+    pub(crate) shadow: Thickness,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -39,6 +41,8 @@ impl View {
             name: String::new(),
             layout: None,
             visibility: Visibility::Visible,
+            visual_offset: Vector { x: 0, y: 0 },
+            shadow: Thickness::all(0),
         }
     }
 
