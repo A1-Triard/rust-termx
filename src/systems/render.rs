@@ -296,6 +296,7 @@ impl Render {
         let real_render_bounds = entity.get(render.view, world).unwrap().real_render_bounds;
         let view = entity.get_mut(render.view, world).unwrap();
         view.shadow = value;
+        if view.visibility() == Visibility::Collapsed { return; }
         view.real_render_bounds_with_shadow = value.expand_rect(real_render_bounds);
         this.invalidate_render(entity, world);
     }

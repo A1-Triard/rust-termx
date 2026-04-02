@@ -430,8 +430,10 @@ impl Layout {
         let layout = this.layout();
         {
             let view = entity.get(layout.view, world).unwrap();
-            if real_render_bounds == view.real_render_bounds {
-                debug_assert_eq!(real_render_bounds_with_shadow, view.real_render_bounds_with_shadow);
+            if
+                   real_render_bounds == view.real_render_bounds
+                && real_render_bounds_with_shadow == view.real_render_bounds_with_shadow
+            {
                 let component = entity.get_mut(layout.layout_view, world).unwrap();
                 component.arrange_size = Some(bounds.size);
                 component.render_bounds = render_bounds;
