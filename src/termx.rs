@@ -171,11 +171,12 @@ impl Termx {
 
     pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error> {
         let termx = this.termx();
+        let mut world = termx.world.borrow_mut();
+        termx.systems().render.set_root(Some(root), &world);
         loop {
             let screen_size = screen.size();
-            let mut world = termx.world.borrow_mut();
             termx.systems().layout.perform(root, &mut world, screen_size);
-            let cursor = termx.systems().render.perform(root, &mut world, screen);
+            let cursor = termx.systems().render.perform(&mut world, screen);
             screen.update(cursor, true)?;
         }
     }

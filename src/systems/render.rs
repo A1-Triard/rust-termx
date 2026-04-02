@@ -31,6 +31,7 @@ pub struct Render {
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
+    root: Cell<Option<Entity<Termx>>>,
     #[virt]
     visual_children_count: fn(entity: Entity<Termx>, world: &World<Termx>) -> usize,
     #[virt]
@@ -50,7 +51,9 @@ pub struct Render {
     #[non_virt]
     set_shadow: fn(entity: Entity<Termx>, world: &mut World<Termx>, value: Thickness),
     #[non_virt]
-    perform: fn(root: Entity<Termx>, world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
+    set_root: fn(root: Option<Entity<Termx>>, world: &World<Termx>),
+    #[non_virt]
+    perform: fn(world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
 fn render_background(
@@ -132,6 +135,7 @@ impl Render {
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
             screen_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
+            root: Cell::new(None),
         }
     }
 
@@ -303,17 +307,21 @@ impl Render {
 
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
+        let Some(root) = render.root.get() else { return; };
         let view = entity.get(render.view, world).unwrap();
         let local_rect = view.real_render_bounds_with_shadow;
         let mut global_offset = view.visual_offset;
         let mut cur = view.visual_parent;
+        let mut in_tree = entity == root;
         while let Some(parent) = cur {
+            in_tree = in_tree && parent == root;
             let parent_view = parent.get(render.view, world).unwrap();
             let tl = parent_view.real_render_bounds.tl;
             global_offset += Vector { x: tl.x, y: tl.y };
             global_offset += parent_view.visual_offset;
             cur = parent_view.visual_parent;
         }
+        if !in_tree { return; }
         let global_rect = local_rect.offset(global_offset);
         let union = render.invalidated_rect.get().union_intersect(global_rect, render.screen_rect.get());
         render.invalidated_rect.set(union);
@@ -349,13 +357,21 @@ impl Render {
         }
     }
 
+    pub fn set_root_impl(this: &Rc<dyn IsRender>, root: Option<Entity<Termx>>, world: &World<Termx>) {
+        let render = this.render();
+        render.root.set(root);
+        if let Some(root) = root {
+            this.invalidate_render(root, world);
+        }
+    }
+
     pub fn perform_impl(
         this: &Rc<dyn IsRender>,
-        root: Entity<Termx>,
         world: &World<Termx>,
         screen: &mut dyn Screen,
     ) -> Option<Point> {
         let render = this.render();
+        let root = render.root.get().unwrap();
         let cursor = render.cursor.get();
         let mut invalidated_rect = render.invalidated_rect.replace(
             Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }
