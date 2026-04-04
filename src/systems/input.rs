@@ -383,7 +383,6 @@ impl Input {
         if let Some(e) = e {
             match e {
                 Event::Key(n, key) => for _ in 0 .. n.get() {
-                    let input = this.input();
                     let handled = if let Some(focused) = input.focused.get() {
                         this.handle_key(focused, world, clock, key)
                     } else {

@@ -223,16 +223,23 @@ impl Termx {
         screen: &mut dyn Screen,
         clock: &MonoClock,
     ) -> Result<(), Error> {
+        const FPS: u16 = 40;
         let termx = this.termx();
         let mut world = termx.world.borrow_mut();
         termx.systems().render.set_root(Some(root), &mut world);
         let mut wait = true;
+        let mut time = clock.time();
         loop {
             let screen_size = screen.size();
             termx.systems().layout.perform(root, &mut world, screen_size);
             let cursor = termx.systems().render.perform(&mut world, screen);
             let e = screen.update(cursor, wait)?;
             wait = termx.systems().input.process(&mut world, clock, e);
+            let ms = time.split_ms_u16(clock).unwrap_or(u16::MAX);
+            if !wait {
+                assert!(FPS != 0 && u16::MAX / FPS > 8);
+                clock.sleep_ms_u16((1000 / FPS).saturating_sub(ms));
+            }
         }
     }
 }
