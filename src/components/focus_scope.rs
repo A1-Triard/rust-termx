@@ -1,4 +1,5 @@
 use alloc::rc::Rc;
+use crate::property_rw;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
 use ooecs::Entity;
@@ -6,6 +7,7 @@ use ooecs::Entity;
 pub struct FocusScope {
     pub(crate) is_enabled_core: bool,
     pub(crate) parent_is_enabled: bool,
+    pub tab_index: i8,
 }
 
 impl FocusScope {
@@ -13,6 +15,7 @@ impl FocusScope {
         FocusScope {
             is_enabled_core: true,
             parent_is_enabled: true,
+            tab_index: i8::MAX,
         }
     }
 
@@ -38,4 +41,51 @@ impl FocusScope {
             termx.systems().render.is_enabled_changed(entity, &mut world, value);
         }
     }
+
+    property_rw!(Termx, focus_scope, tab_index, i8);
+}
+
+#[macro_export]
+macro_rules! focus_scope_template {
+    (
+        $(#[$attr:meta])*
+        $vis:vis struct $name:ident in $mod:ident {
+            $(use $path:path as $import:ident;)*
+            $($(
+                $(#[$field_attr:meta])*
+                pub $field_name:ident : $field_ty:ty
+            ),+ $(,)?)?
+        }
+    ) => {
+        $crate::layout_view_template! {
+            $(#[$attr])*
+            $vis struct $name in $mod {
+                $(use $path as $import;)*
+
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub is_enabled: Option<bool>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub tab_index: Option<i8>,
+                $($(
+                    $(#[$field_attr])*
+                    pub $field_name : $field_ty
+                ),+)?
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! focus_scope_apply_template {
+    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
+        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
+        $this.is_enabled.map(|x|
+            $crate::components::focus_scope::FocusScope::set_is_enabled($entity, $termx, x)
+        );
+        $this.tab_index.map(|x|
+            $crate::components::focus_scope::FocusScope::set_tab_index($entity, $termx, x)
+        );
+    };
 }

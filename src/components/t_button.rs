@@ -3,6 +3,8 @@ use alloc::rc::Rc;
 use crate::base::{Fg, Bg};
 use crate::components::view::*;
 use crate::components::layout_view::*;
+use crate::components::focus_scope::FocusScope;
+use crate::components::input_element::InputElement;
 use crate::systems::render::RenderExt;
 use int_vec_2d::Thickness;
 use crate::property;
@@ -26,16 +28,24 @@ impl TButton {
     }
 
     pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        let termx = termx.termx();
-        let view = termx.components().view;
-        let layout_view = termx.components().layout_view;
-        let t_button = termx.components().t_button;
-        let mut world = termx.world.borrow_mut();
-        let b = Entity::new(t_button, &mut world);
-        b.add(view, &mut world, View::new(TREE_NONE, RENDER_T_BUTTON));
-        b.add(layout_view, &mut world, LayoutView::new(LAYOUT_T_BUTTON));
-        b.add(t_button, &mut world, TButton::new());
-        termx.systems().render.set_shadow(b, &mut world, Thickness::new(0, 0, 1, 1));
+        let termx_inner = termx.termx();
+        let view = termx_inner.components().view;
+        let layout_view = termx_inner.components().layout_view;
+        let focus_scope = termx_inner.components().focus_scope;
+        let input_element = termx_inner.components().input_element;
+        let t_button = termx_inner.components().t_button;
+        let b = {
+            let mut world = termx_inner.world.borrow_mut();
+            let b = Entity::new(t_button, &mut world);
+            b.add(view, &mut world, View::new(TREE_NONE, RENDER_T_BUTTON));
+            b.add(layout_view, &mut world, LayoutView::new(LAYOUT_T_BUTTON));
+            b.add(focus_scope, &mut world, FocusScope::new());
+            b.add(input_element, &mut world, InputElement::new());
+            b.add(t_button, &mut world, TButton::new());
+            b
+        };
+        let mut world = termx_inner.world.borrow_mut();
+        termx_inner.systems().render.set_shadow(b, &mut world, Thickness::new(0, 0, 1, 1));
         b
     }
 
@@ -56,7 +66,7 @@ macro_rules! t_button_template {
             ),+ $(,)?)?
         }
     ) => {
-        $crate::layout_view_template! {
+        $crate::input_element_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
                 use $crate::base::serialize_color as components_t_button_serialize_color;
@@ -88,7 +98,7 @@ macro_rules! t_button_template {
 #[macro_export]
 macro_rules! t_button_apply_template {
     ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
+        $crate::input_element_apply_template! { $this, $entity, $termx, $names }
         $this.text.as_ref().map(|x|
             $crate::components::t_button::TButton::set_text($entity, $termx, x.clone())
         );
