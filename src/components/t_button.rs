@@ -4,10 +4,11 @@ use crate::base::{Fg, Bg};
 use crate::components::view::*;
 use crate::components::layout_view::*;
 use crate::components::focus_scope::FocusScope;
-use crate::components::input_element::InputElement;
+use crate::components::input_element::*;
 use crate::systems::render::RenderExt;
 use int_vec_2d::Thickness;
 use crate::property;
+use crate::systems::input::Timer;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
 use ooecs::Entity;
@@ -19,6 +20,7 @@ pub struct TButton {
     color_focused: (Fg, Bg),
     color_focused_hotkey: (Fg, Bg),
     color_disabled: (Fg, Bg),
+    pub(crate) pressed: Option<Timer>,
 }
 
 impl TButton {
@@ -30,6 +32,7 @@ impl TButton {
             color_focused: (Fg::White, Bg::Green),
             color_focused_hotkey: (Fg::Yellow, Bg::Green),
             color_disabled: (Fg::DarkGray, Bg::Green),
+            pressed: None,
         }
     }
 
@@ -46,7 +49,7 @@ impl TButton {
             b.add(view, &mut world, View::new(TREE_NONE, RENDER_T_BUTTON));
             b.add(layout_view, &mut world, LayoutView::new(LAYOUT_T_BUTTON));
             b.add(focus_scope, &mut world, FocusScope::new());
-            b.add(input_element, &mut world, InputElement::new());
+            b.add(input_element, &mut world, InputElement::new(INPUT_T_BUTTON));
             b.add(t_button, &mut world, TButton::new());
             b
         };

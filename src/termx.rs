@@ -24,6 +24,7 @@ import! { pub termx:
     use int_vec_2d::{Vector, Thickness, HAlign, VAlign};
     use ooecs::{Entity, World};
     use termx_screen_base::{Screen, Error};
+    use timer_no_std::MonoClock;
 }
 
 pub struct TermxComponents {
@@ -75,7 +76,7 @@ pub struct Termx {
     #[virt]
     create_input: fn() -> Rc<dyn IsInput>,
     #[non_virt]
-    run: fn(root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error>,
+    run: fn(root: Entity<Termx>, screen: &mut dyn Screen, clock: &MonoClock) -> Result<(), Error>,
     #[virt]
     drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
@@ -177,6 +178,7 @@ impl Termx {
             components.as_ref().unwrap().panel,
             components.as_ref().unwrap().focus_scope,
             components.as_ref().unwrap().input_element,
+            components.as_ref().unwrap().t_button,
         )
     }
 
@@ -215,17 +217,22 @@ impl Termx {
         entity.drop_entity(world);
     }
 
-    pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error> {
+    pub fn run_impl(
+        this: &Rc<dyn IsTermx>,
+        root: Entity<Termx>,
+        screen: &mut dyn Screen,
+        clock: &MonoClock,
+    ) -> Result<(), Error> {
         let termx = this.termx();
         let mut world = termx.world.borrow_mut();
         termx.systems().render.set_root(Some(root), &mut world);
+        let mut wait = true;
         loop {
             let screen_size = screen.size();
             termx.systems().layout.perform(root, &mut world, screen_size);
             let cursor = termx.systems().render.perform(&mut world, screen);
-            if let Some(e) = screen.update(cursor, true)? {
-                termx.systems().input.process(&mut world, e);
-            }
+            let e = screen.update(cursor, wait)?;
+            wait = termx.systems().input.process(&mut world, clock, e);
         }
     }
 }

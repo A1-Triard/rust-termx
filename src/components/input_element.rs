@@ -2,16 +2,25 @@ use crate::{property_ro, property_rw};
 use crate::termx::IsTermx;
 
 pub struct InputElement {
+    input: u16,
     pub focusable: bool,
     pub(crate) is_focused: bool,
 }
 
+pub const INPUT_NONE: u16 = 0;
+pub const INPUT_T_BUTTON: u16 = 1;
+
 impl InputElement {
-    pub fn new() -> Self {
+    pub fn new(input: u16) -> Self {
         InputElement {
+            input,
             focusable: true,
             is_focused: false,
         }
+    }
+
+    pub fn input(&self) -> u16 {
+        self.input
     }
 
     property_rw!(Termx, input_element, focusable, bool);

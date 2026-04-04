@@ -97,22 +97,35 @@ fn render_t_button(
         (t_button.color(), t_button.color_hotkey())
     };
 
-    let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
-    let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(bg_bounds);
-    let text_align = Thickness::align(
-        Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
-        text_bounds.size,
-        HAlign::Center,
-        VAlign::Center
-    );
-    let text_bounds = text_align.shrink_rect(text_bounds);
-    let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
-    let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
-    rp.fill_rect(bg_bounds, |rp, p| rp.text(p, color, " "));
-    rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
-    rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
-    rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
-    rp.half_shadow(inner_bounds.tr_inner(), "▄");
+    if t_button.pressed.is_some() {
+        let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(inner_bounds);
+        let text_align = Thickness::align(
+            Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+            text_bounds.size,
+            HAlign::Center,
+            VAlign::Center
+        );
+        let text_bounds = text_align.shrink_rect(text_bounds);
+        rp.fill(|rp, p| rp.text(p, color, " "));
+        rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
+    } else {
+        let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
+        let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(bg_bounds);
+        let text_align = Thickness::align(
+            Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+            text_bounds.size,
+            HAlign::Center,
+            VAlign::Center
+        );
+        let text_bounds = text_align.shrink_rect(text_bounds);
+        let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
+        let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
+        rp.fill_rect(bg_bounds, |rp, p| rp.text(p, color, " "));
+        rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
+        rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
+        rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
+        rp.half_shadow(inner_bounds.tr_inner(), "▄");
+    }
 }
 
 impl Render {

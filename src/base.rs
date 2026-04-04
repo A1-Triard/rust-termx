@@ -7,6 +7,7 @@ use serde::de::{self};
 
 pub use int_vec_2d::*;
 pub use termx_screen_base::*;
+pub use timer_no_std::*;
 
 pub fn label_width(text: &str) -> i16 {
     let mut width = 0i16;
