@@ -28,13 +28,10 @@ pub struct Input {
     pub focus_scope: Component<FocusScope, Termx>,
     pub input_element: Component<InputElement, Termx>,
     focused: Cell<Option<Entity<Termx>>>,
-    root: Cell<Option<Entity<Termx>>>,
     #[virt]
     handle_key: fn(entity: Entity<Termx>, world: &mut World<Termx>, key: Key) -> bool,
     #[virt]
     process: fn(world: &mut World<Termx>, e: Event),
-    #[non_virt]
-    set_root: fn(root: Option<Entity<Termx>>),
     #[non_virt]
     allow_focus: fn(entity: Entity<Termx>, world: &World<Termx>) -> bool,
     #[non_virt]
@@ -85,7 +82,6 @@ impl Input {
             focus_scope,
             input_element,
             focused: Cell::new(None),
-            root: Cell::new(None),
         }
     }
 
@@ -96,10 +92,6 @@ impl Input {
         let is_enabled = entity.get(input.focus_scope, world).map_or(true, |x| x.is_enabled());
         if !is_enabled { return false; }
         entity.get(input.view, world).unwrap().visibility() == Visibility::Visible
-    }
-
-    pub fn set_root_impl(this: &Rc<dyn IsInput>, root: Option<Entity<Termx>>) {
-        this.input().root.set(root);
     }
 
     pub fn focused_impl(this: &Rc<dyn IsInput>) -> Option<Entity<Termx>> {
@@ -126,7 +118,7 @@ impl Input {
         let focused = match input.focused.get() {
             Some(f) => f,
             None => {
-                let root = input.root.get().unwrap();
+                let root = input.termx.upgrade().unwrap().termx().systems().render.root().unwrap();
                 if this.allow_focus(root, world) {
                     Self::focus_raw(this, Some(root), world);
                     return;
@@ -221,16 +213,26 @@ impl Input {
     }
 
     pub fn focus_impl(this: &Rc<dyn IsInput>, entity: Option<Entity<Termx>>, world: &mut World<Termx>) {
+        if let Some(entity) = entity {
+            let input = this.input();
+            let termx = input.termx.upgrade().unwrap();
+            let render = &termx.termx().systems().render;
+            assert!(render.root().is_none() || render.in_tree(entity, world));
+        }
         if entity.map_or(true, |x| this.allow_focus(x, world)) {
             Self::focus_raw(this, entity, world);
         }
     }
 
     pub fn focus_next_impl(this: &Rc<dyn IsInput>, world: &mut World<Termx>) {
+        let input = this.input();
+        assert!(input.termx.upgrade().unwrap().termx().systems().render.root().is_some());
         Self::move_focus(this, world, true);
     }
 
     pub fn focus_prev_impl(this: &Rc<dyn IsInput>, world: &mut World<Termx>) {
+        let input = this.input();
+        assert!(input.termx.upgrade().unwrap().termx().systems().render.root().is_some());
         Self::move_focus(this, world, false);
     }
 
@@ -244,6 +246,8 @@ impl Input {
     }
 
     pub fn process_impl(this: &Rc<dyn IsInput>, world: &mut World<Termx>, e: Event) {
+        let input = this.input();
+        assert!(input.termx.upgrade().unwrap().termx().systems().render.root().is_some());
         match e {
             Event::Key(n, key) => for _ in 0 .. n.get() {
                 let input = this.input();

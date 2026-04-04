@@ -1,4 +1,4 @@
-use alloc::rc::Rc;
+use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use core::cmp::min;
@@ -11,6 +11,8 @@ use crate::components::focus_scope::FocusScope;
 use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
+use crate::systems::input::InputExt;
+use crate::termx::IsTermx;
 use int_vec_2d::{Vector, Point, Rect, Thickness, HAlign, VAlign};
 use ooecs::Component;
 
@@ -23,6 +25,7 @@ import! { pub render:
 
 #[class_unsafe(inherits_Obj)]
 pub struct Render {
+    termx: rc::Weak<dyn IsTermx>,
     pub view: Component<View, Termx>,
     pub decorator: Component<Decorator, Termx>,
     pub panel: Component<Panel, Termx>,
@@ -53,7 +56,11 @@ pub struct Render {
     #[non_virt]
     set_shadow: fn(entity: Entity<Termx>, world: &mut World<Termx>, value: Thickness),
     #[non_virt]
-    set_root: fn(root: Option<Entity<Termx>>, world: &World<Termx>),
+    root: fn() -> Option<Entity<Termx>>,
+    #[non_virt]
+    set_root: fn(root: Option<Entity<Termx>>, world: &mut World<Termx>),
+    #[non_virt]
+    in_tree: fn(entity: Entity<Termx>, world: &World<Termx>) -> bool,
     #[non_virt]
     perform: fn(world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
@@ -110,6 +117,7 @@ fn render_t_button(
 
 impl Render {
     pub fn new(
+        termx: &Rc<dyn IsTermx>,
         view: Component<View, Termx>,
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
@@ -119,6 +127,7 @@ impl Render {
         input_element: Component<InputElement, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
+            termx,
             view,
             decorator,
             panel,
@@ -131,6 +140,7 @@ impl Render {
     }
 
     pub unsafe fn new_raw(
+        termx: &Rc<dyn IsTermx>,
         view: Component<View, Termx>,
         decorator: Component<Decorator, Termx>,
         panel: Component<Panel, Termx>,
@@ -142,6 +152,7 @@ impl Render {
     ) -> Self {
         Render {
             obj: unsafe { Obj::new_raw(vtable) },
+            termx: Rc::downgrade(termx),
             view,
             decorator,
             panel,
@@ -245,6 +256,7 @@ impl Render {
         world: &mut World<Termx>,
     ) {
         let render = this.render();
+        assert_ne!(Some(child), render.root.get());
         child.get_mut(render.view, world).unwrap().visual_parent = Some(parent);
         this.invalidate_render(child, world);
         let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(render.focus_scope, world) {
@@ -322,6 +334,17 @@ impl Render {
         this.invalidate_render(entity, world);
     }
 
+    pub fn in_tree_impl(this: &Rc<dyn IsRender>, mut entity: Entity<Termx>, world: &World<Termx>) -> bool {
+        let render = this.render();
+        let root = render.root.get().unwrap();
+        loop {
+            if entity == root { return true; }
+            let Some(parent) = entity.get(render.view, world).unwrap().visual_parent else { break; };
+            entity = parent;
+        }
+        false
+    }
+
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
         let Some(root) = render.root.get() else { return; };
@@ -374,11 +397,30 @@ impl Render {
         }
     }
 
-    pub fn set_root_impl(this: &Rc<dyn IsRender>, root: Option<Entity<Termx>>, world: &World<Termx>) {
+    pub fn root_impl(this: &Rc<dyn IsRender>) -> Option<Entity<Termx>> {
+        this.render().root.get()
+    }
+
+    pub fn set_root_impl(this: &Rc<dyn IsRender>, root: Option<Entity<Termx>>, world: &mut World<Termx>) {
         let render = this.render();
+        if let Some(root) = root {
+            assert!(root.get(render.view, world).unwrap().visual_parent.is_none());
+            let termx = render.termx.upgrade().unwrap();
+            let input = &termx.termx().systems().input;
+            if let Some(mut focused) = input.focused() {
+                loop {
+                    if focused == root { break; }
+                    focused = focused.get(render.view, world).unwrap().visual_parent.unwrap();
+                }
+            }
+        }
         render.root.set(root);
         if let Some(root) = root {
             this.invalidate_render(root, world);
+        } else {
+            let termx = render.termx.upgrade().unwrap();
+            let input = &termx.termx().systems().input;
+            input.focus(None, world);
         }
     }
 

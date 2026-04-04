@@ -154,6 +154,7 @@ impl Termx {
         let termx = this.termx();
         let components = termx.components.borrow();
         Render::new(
+            this,
             components.as_ref().unwrap().view,
             components.as_ref().unwrap().decorator,
             components.as_ref().unwrap().panel,
@@ -167,14 +168,13 @@ impl Termx {
     pub fn create_input_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsInput> {
         let termx = this.termx();
         let components = termx.components.borrow();
-        let c = components.as_ref().unwrap();
         Input::new(
             this,
-            c.view,
-            c.decorator,
-            c.panel,
-            c.focus_scope,
-            c.input_element,
+            components.as_ref().unwrap().view,
+            components.as_ref().unwrap().decorator,
+            components.as_ref().unwrap().panel,
+            components.as_ref().unwrap().focus_scope,
+            components.as_ref().unwrap().input_element,
         )
     }
 
@@ -196,13 +196,9 @@ impl Termx {
 
     pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error> {
         let termx = this.termx();
-        {
-            let world = termx.world.borrow();
-            termx.systems().render.set_root(Some(root), &world);
-            termx.systems().input.set_root(Some(root));
-        }
+        let mut world = termx.world.borrow_mut();
+        termx.systems().render.set_root(Some(root), &mut world);
         loop {
-            let mut world = termx.world.borrow_mut();
             let screen_size = screen.size();
             termx.systems().layout.perform(root, &mut world, screen_size);
             let cursor = termx.systems().render.perform(&mut world, screen);
