@@ -200,7 +200,7 @@ impl Input {
         let render = &termx.termx().systems().render;
         let mut focus = focused;
         loop {
-            if
+            let next = if
                    focus != focused // is_enabled & visibility checked already
                 || (
                        focus.get(input.focus_scope, world).unwrap().is_enabled()
@@ -209,7 +209,7 @@ impl Input {
             {
                 let mut next_tab_index = if forward { i16::MAX } else { i16::MIN };
                 let children_count = render.visual_children_count(focus, world);
-                let mut next = focus;
+                let mut next = None;
                 for i in 0 .. children_count {
                     let child = render.visual_child(focus, world, i);
                     let Some(focus_scope) = child.get(input.focus_scope, world) else { continue; };
@@ -224,12 +224,16 @@ impl Input {
                         || (!forward && i16::from(focus_scope.tab_index) >= next_tab_index)
                     {
                         next_tab_index = i16::from(focus_scope.tab_index);
-                        next = child;
+                        next = Some(child);
                     }
                 }
+                next
+            } else {
+                None
+            };
+            if let Some(next) = next {
                 focus = next;
-            }
-            if focus == focused {
+            } else {
                 while let Some(parent) = focus.get(input.view, world).unwrap().visual_parent {
                     let tab_index = focus.get(input.focus_scope, world).unwrap().tab_index;
                     let mut before_focus = true;
