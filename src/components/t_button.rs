@@ -16,6 +16,9 @@ pub struct TButton {
     text: String,
     color: (Fg, Bg),
     color_hotkey: (Fg, Bg),
+    color_focused: (Fg, Bg),
+    color_focused_hotkey: (Fg, Bg),
+    color_disabled: (Fg, Bg),
 }
 
 impl TButton {
@@ -24,6 +27,9 @@ impl TButton {
             text: String::new(),
             color: (Fg::Black, Bg::Green),
             color_hotkey: (Fg::Yellow, Bg::Green),
+            color_focused: (Fg::White, Bg::Green),
+            color_focused_hotkey: (Fg::Yellow, Bg::Green),
+            color_disabled: (Fg::DarkGray, Bg::Green),
         }
     }
 
@@ -52,6 +58,9 @@ impl TButton {
     property!(Termx, t_button, text, ref String as &str, @measure);
     property!(Termx, t_button, color, (Fg, Bg), @render);
     property!(Termx, t_button, color_hotkey, (Fg, Bg), @render);
+    property!(Termx, t_button, color_focused, (Fg, Bg), @render);
+    property!(Termx, t_button, color_focused_hotkey, (Fg, Bg), @render);
+    property!(Termx, t_button, color_disabled, (Fg, Bg), @render);
 }
 
 #[macro_export]
@@ -86,6 +95,21 @@ macro_rules! t_button_template {
                 #[serde(serialize_with="components_t_button_serialize_color")]
                 #[serde(deserialize_with="components_t_button_deserialize_color")]
                 pub color_hotkey: Option<($crate::base::Fg, $crate::base::Bg)>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_t_button_serialize_color")]
+                #[serde(deserialize_with="components_t_button_deserialize_color")]
+                pub color_focused: Option<($crate::base::Fg, $crate::base::Bg)>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_t_button_serialize_color")]
+                #[serde(deserialize_with="components_t_button_deserialize_color")]
+                pub color_focused_hotkey: Option<($crate::base::Fg, $crate::base::Bg)>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                #[serde(serialize_with="components_t_button_serialize_color")]
+                #[serde(deserialize_with="components_t_button_deserialize_color")]
+                pub color_disabled: Option<($crate::base::Fg, $crate::base::Bg)>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -104,6 +128,15 @@ macro_rules! t_button_apply_template {
         );
         $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $termx, x));
         $this.color_hotkey.map(|x| $crate::components::t_button::TButton::set_color_hotkey($entity, $termx, x));
+        $this.color_focused.map(
+            |x| $crate::components::t_button::TButton::set_color_focused($entity, $termx, x)
+        );
+        $this.color_focused_hotkey.map(
+            |x| $crate::components::t_button::TButton::set_color_focused_hotkey($entity, $termx, x)
+        );
+        $this.color_disabled.map(
+            |x| $crate::components::t_button::TButton::set_color_disabled($entity, $termx, x)
+        );
     };
 }
 

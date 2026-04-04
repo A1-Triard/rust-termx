@@ -2,7 +2,7 @@ use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use core::cmp::min;
-use crate::base::{label_width, Visibility, Fg, Bg};
+use crate::base::{label_width, Visibility};
 use crate::components::background::Background;
 use crate::components::input_element::InputElement;
 use crate::components::t_button::TButton;
@@ -90,9 +90,9 @@ fn render_t_button(
     let is_focused = entity.get(render.input_element, world).unwrap().is_focused;
 
     let (color, color_hotkey) = if !is_enabled {
-        ((Fg::DarkGray, Bg::Black), (Fg::DarkGray, Bg::Black))
+        (t_button.color_disabled(), t_button.color_disabled())
     } else if is_focused {
-        ((Fg::Black, Bg::Cyan), (Fg::Yellow, Bg::Cyan))
+        (t_button.color_focused(), t_button.color_focused_hotkey())
     } else {
         (t_button.color(), t_button.color_hotkey())
     };
