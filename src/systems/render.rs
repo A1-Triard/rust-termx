@@ -2,8 +2,9 @@ use alloc::rc::Rc;
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use core::cmp::min;
-use crate::base::{label_width, Visibility};
+use crate::base::{label_width, Visibility, Fg, Bg};
 use crate::components::background::Background;
+use crate::components::input_element::InputElement;
 use crate::components::t_button::TButton;
 use crate::components::decorator::Decorator;
 use crate::components::focus_scope::FocusScope;
@@ -28,6 +29,7 @@ pub struct Render {
     pub background: Component<Background, Termx>,
     pub t_button: Component<TButton, Termx>,
     pub focus_scope: Component<FocusScope, Termx>,
+    pub input_element: Component<InputElement, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
@@ -77,6 +79,17 @@ fn render_t_button(
 ) {
     let render = this.render();
     let t_button = entity.get(render.t_button, world).unwrap();
+    let is_enabled = entity.get(render.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(render.input_element, world).unwrap().is_focused;
+
+    let (color, color_hotkey) = if !is_enabled {
+        ((Fg::DarkGray, Bg::Black), (Fg::DarkGray, Bg::Black))
+    } else if is_focused {
+        ((Fg::Black, Bg::Cyan), (Fg::Yellow, Bg::Cyan))
+    } else {
+        (t_button.color(), t_button.color_hotkey())
+    };
+
     let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
     let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(bg_bounds);
     let text_align = Thickness::align(
@@ -88,8 +101,8 @@ fn render_t_button(
     let text_bounds = text_align.shrink_rect(text_bounds);
     let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
     let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
-    rp.fill_rect(bg_bounds, |rp, p| rp.text(p, t_button.color(), " "));
-    rp.label_in_rect(text_bounds, t_button.color(), t_button.color_hotkey(), t_button.text());
+    rp.fill_rect(bg_bounds, |rp, p| rp.text(p, color, " "));
+    rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
     rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
     rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
     rp.half_shadow(inner_bounds.tr_inner(), "▄");
@@ -103,6 +116,7 @@ impl Render {
         background: Component<Background, Termx>,
         t_button: Component<TButton, Termx>,
         focus_scope: Component<FocusScope, Termx>,
+        input_element: Component<InputElement, Termx>,
     ) -> Rc<dyn IsRender> {
         Rc::new(unsafe { Self::new_raw(
             view,
@@ -111,6 +125,7 @@ impl Render {
             background,
             t_button,
             focus_scope,
+            input_element,
             RENDER_VTABLE.as_ptr(),
         ) })
     }
@@ -122,6 +137,7 @@ impl Render {
         background: Component<Background, Termx>,
         t_button: Component<TButton, Termx>,
         focus_scope: Component<FocusScope, Termx>,
+        input_element: Component<InputElement, Termx>,
         vtable: Vtable,
     ) -> Self {
         Render {
@@ -132,6 +148,7 @@ impl Render {
             background,
             t_button,
             focus_scope,
+            input_element,
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
             screen_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
@@ -314,7 +331,7 @@ impl Render {
         let mut cur = view.visual_parent;
         let mut in_tree = entity == root;
         while let Some(parent) = cur {
-            in_tree = in_tree && parent == root;
+            in_tree = in_tree || parent == root;
             let parent_view = parent.get(render.view, world).unwrap();
             let tl = parent_view.real_render_bounds.tl;
             global_offset += Vector { x: tl.x, y: tl.y };

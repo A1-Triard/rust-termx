@@ -160,6 +160,7 @@ impl Termx {
             components.as_ref().unwrap().background,
             components.as_ref().unwrap().t_button,
             components.as_ref().unwrap().focus_scope,
+            components.as_ref().unwrap().input_element,
         )
     }
 

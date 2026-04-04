@@ -129,8 +129,9 @@ impl Input {
                 let root = input.root.get().unwrap();
                 if this.allow_focus(root, world) {
                     Self::focus_raw(this, Some(root), world);
+                    return;
                 }
-                return;
+                root
             },
         };
         let termx = input.termx.upgrade().unwrap();
@@ -144,8 +145,9 @@ impl Input {
                     && focus.get(input.view, world).unwrap().visibility() == Visibility::Visible
                 )
             {
-                let mut next_tab_index = if forward { i8::MAX } else { i8::MIN };
+                let mut next_tab_index = if forward { i16::MAX } else { i16::MIN };
                 let children_count = render.visual_children_count(focus, world);
+                let mut next = focus;
                 for i in 0 .. children_count {
                     let child = render.visual_child(focus, world, i);
                     let Some(focus_scope) = child.get(input.focus_scope, world) else { continue; };
@@ -156,19 +158,20 @@ impl Input {
                         continue;
                     }
                     if
-                           (forward && focus_scope.tab_index < next_tab_index)
-                        || (!forward && focus_scope.tab_index >= next_tab_index)
+                           (forward && i16::from(focus_scope.tab_index) < next_tab_index)
+                        || (!forward && i16::from(focus_scope.tab_index) >= next_tab_index)
                     {
-                        next_tab_index = focus_scope.tab_index;
-                        focus = child;
+                        next_tab_index = i16::from(focus_scope.tab_index);
+                        next = child;
                     }
                 }
+                focus = next;
             }
             if focus == focused {
                 while let Some(parent) = focus.get(input.view, world).unwrap().visual_parent {
                     let tab_index = focus.get(input.focus_scope, world).unwrap().tab_index;
                     let mut before_focus = true;
-                    let mut next_tab_index = if forward { i8::MAX } else { i8::MIN };
+                    let mut next_tab_index = if forward { i16::MAX } else { i16::MIN };
                     let mut next = focus;
                     let parent_children_count = render.visual_children_count(parent, world);
                     for i in 0 .. parent_children_count {
@@ -192,11 +195,11 @@ impl Input {
                         ;
                         if     candidate 
                             && (
-                                   (forward && focus_scope.tab_index < next_tab_index)
-                                || (!forward && focus_scope.tab_index >= next_tab_index)
+                                   (forward && i16::from(focus_scope.tab_index) < next_tab_index)
+                                || (!forward && i16::from(focus_scope.tab_index) >= next_tab_index)
                             )
                         {
-                            next_tab_index = focus_scope.tab_index;
+                            next_tab_index = i16::from(focus_scope.tab_index);
                             next = sibling;
                         }
                     }
@@ -244,12 +247,15 @@ impl Input {
         match e {
             Event::Key(n, key) => for _ in 0 .. n.get() {
                 let input = this.input();
-                if let Some(focused) = input.focused.get() {
-                    if !this.handle_key(focused, world, key) {
-                        match key {
-                            Key::Tab => this.focus_next(world),
-                            _ => { }
-                        }
+                let handled = if let Some(focused) = input.focused.get() {
+                    this.handle_key(focused, world, key)
+                } else {
+                    false
+                };
+                if !handled {
+                    match key {
+                        Key::Tab => this.focus_next(world),
+                        _ => { }
                     }
                 }
             },
