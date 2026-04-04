@@ -2,6 +2,7 @@ use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::layout_view::*;
 use crate::components::panel::Panel;
+use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
 use crate::property;
 use crate::template::{Template, NameResolver};
@@ -21,12 +22,14 @@ impl StackPanel {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
+        let focus_scope = termx.components().focus_scope;
         let panel = termx.components().panel;
         let stack_panel = termx.components().stack_panel;
         let mut world = termx.world.borrow_mut();
         let p = Entity::new(stack_panel, &mut world);
         p.add(view, &mut world, View::new(TREE_PANEL, RENDER_NONE));
         p.add(layout_view, &mut world, LayoutView::new(LAYOUT_STACK_PANEL));
+        p.add(focus_scope, &mut world, FocusScope::new());
         p.add(panel, &mut world, Panel::new());
         p.add(stack_panel, &mut world, StackPanel::new());
         p

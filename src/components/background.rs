@@ -1,6 +1,7 @@
 use alloc::string::{String, ToString};
 use alloc::rc::Rc;
 use crate::components::decorator::Decorator;
+use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
 use crate::components::layout_view::*;
 use crate::property;
@@ -26,12 +27,14 @@ impl Background {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
+        let focus_scope = termx.components().focus_scope;
         let decorator = termx.components().decorator;
         let background = termx.components().background;
         let mut world = termx.world.borrow_mut();
         let bg = Entity::new(background, &mut world);
         bg.add(view, &mut world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
         bg.add(layout_view, &mut world, LayoutView::new(LAYOUT_BACKGROUND));
+        bg.add(focus_scope, &mut world, FocusScope::new());
         bg.add(decorator, &mut world, Decorator::new());
         bg.add(background, &mut world, Background::new());
         bg

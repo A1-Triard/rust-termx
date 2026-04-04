@@ -2,6 +2,7 @@ use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::layout_view::*;
 use crate::components::panel::Panel;
+use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
@@ -18,12 +19,14 @@ impl Canvas {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
+        let focus_scope = termx.components().focus_scope;
         let panel = termx.components().panel;
         let canvas = termx.components().canvas;
         let mut world = termx.world.borrow_mut();
         let p = Entity::new(canvas, &mut world);
         p.add(view, &mut world, View::new(TREE_PANEL, RENDER_NONE));
         p.add(layout_view, &mut world, LayoutView::new(LAYOUT_CANVAS));
+        p.add(focus_scope, &mut world, FocusScope::new());
         p.add(panel, &mut world, Panel::new());
         p.add(canvas, &mut world, Canvas::new());
         p

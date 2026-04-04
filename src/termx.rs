@@ -113,8 +113,8 @@ impl Termx {
         let view: Component<View, Termx> = Component::new_base(&mut world);
         let layout_view: Component<LayoutView, Termx> = Component::new(view, &mut world);
         let focus_scope: Component<FocusScope, Termx> = Component::new(layout_view, &mut world);
-        let decorator: Component<Decorator, Termx> = Component::new(layout_view, &mut world);
-        let panel: Component<Panel, Termx> = Component::new(layout_view, &mut world);
+        let decorator: Component<Decorator, Termx> = Component::new(focus_scope, &mut world);
+        let panel: Component<Panel, Termx> = Component::new(focus_scope, &mut world);
         let view_layout: Component<ViewLayout, Termx> = Component::new_base(&mut world);
         let background: Component<Background, Termx> = Component::new(decorator, &mut world);
         let stack_panel: Component<StackPanel, Termx> = Component::new(panel, &mut world);
