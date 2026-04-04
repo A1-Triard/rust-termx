@@ -16,13 +16,13 @@ use crate::components::input_element::InputElement;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
-use ooecs::{Component, World};
+use ooecs::Component;
 
 import! { pub termx:
     use [obj basic_oop::obj];
     use alloc::rc::Rc;
     use int_vec_2d::{Vector, Thickness, HAlign, VAlign};
-    use ooecs::{Entity};
+    use ooecs::{Entity, World};
     use termx_screen_base::{Screen, Error};
 }
 
@@ -76,6 +76,8 @@ pub struct Termx {
     create_input: fn() -> Rc<dyn IsInput>,
     #[non_virt]
     run: fn(root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error>,
+    #[virt]
+    drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
 impl Termx {
@@ -192,6 +194,25 @@ impl Termx {
             components.as_ref().unwrap().canvas_layout,
             components.as_ref().unwrap().t_button,
         )
+    }
+
+    pub fn drop_entity_impl(this: &Rc<dyn IsTermx>, entity: Entity<Termx>, world: &mut World<Termx>) {
+        let termx = this.termx();
+        let render = &termx.systems().render;
+        assert_ne!(Some(entity), render.root(), "cannot drop the root entity");
+        let input = &termx.systems().input;
+        if let Some(mut focused) = input.focused() {
+            let view = termx.components().view;
+            let clear_focus = loop {
+                if focused == entity { break true; }
+                let Some(parent) = focused.get(view, world).unwrap().visual_parent else { break false; };
+                focused = parent;
+            };
+            if clear_focus {
+                input.focus(None, world);
+            }
+        }
+        entity.drop_entity(world);
     }
 
     pub fn run_impl(this: &Rc<dyn IsTermx>, root: Entity<Termx>, screen: &mut dyn Screen) -> Result<(), Error> {
