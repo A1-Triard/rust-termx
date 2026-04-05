@@ -10,5 +10,11 @@
         <CanvasLayout Tl="10,8" />
       </TButton.Layout>
     </TButton>
+    <StaticText>
+      <StaticText.Layout>
+        <CanvasLayout Tl="10,11" />
+      </StaticText.Layout>
+      Это просто текст
+    </StaticText>
   </Canvas>
 </Background>

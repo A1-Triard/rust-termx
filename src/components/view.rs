@@ -29,6 +29,7 @@ pub const TREE_PANEL: u16 = 2;
 pub const RENDER_NONE: u16 = 0;
 pub const RENDER_BACKGROUND: u16 = 1;
 pub const RENDER_T_BUTTON: u16 = 2;
+pub const RENDER_STATIC_TEXT: u16 = 3;
 
 impl View {
     pub fn new(tree: u16, render: u16) -> Self {

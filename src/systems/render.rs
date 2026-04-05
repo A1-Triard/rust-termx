@@ -7,6 +7,7 @@ use crate::components::view::*;
 use crate::render_port::RenderPort;
 use crate::systems::input::InputExt;
 use crate::termx::IsTermx;
+use crate::text_renderer::render_text;
 use int_vec_2d::{Vector, Point, Rect, Thickness, HAlign, VAlign};
 
 import! { pub render:
@@ -55,6 +56,32 @@ pub struct Render {
     perform: fn(world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
+fn render_static_text(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
+) {
+    let render = this.render();
+    let termx = render.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let static_text = entity.get(c.static_text, world).unwrap();
+    rp.fill_bg(static_text.color());
+    let text_bounds = render_text(
+        |p, s| rp.text(p, static_text.color(), s),
+        inner_bounds,
+        static_text.text_align().into(),
+        static_text.text_wrapping(),
+        static_text.text(),
+    );
+    if (text_bounds.w() as u16) > (inner_bounds.w() as u16)
+        || (text_bounds.h() as u16) > (inner_bounds.h() as u16)
+    {
+        rp.text(inner_bounds.br_inner(), static_text.color(), "►");
+    }
+}
+
 fn render_background(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
@@ -101,7 +128,7 @@ fn render_t_button(
             VAlign::Center
         );
         let text_bounds = text_align.shrink_rect(text_bounds);
-        rp.fill(|rp, p| rp.text(p, color, " "));
+        rp.fill_bg(color);
         rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
     } else {
         let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
@@ -198,6 +225,7 @@ impl Render {
         match entity.get(c.view, world).unwrap().render() {
             RENDER_BACKGROUND => render_background(this, entity, world, rp, inner_bounds),
             RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
+            RENDER_STATIC_TEXT => render_static_text(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

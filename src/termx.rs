@@ -13,6 +13,7 @@ use crate::components::canvas_layout::CanvasLayout;
 use crate::components::canvas::Canvas;
 use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::InputElement;
+use crate::components::static_text::StaticText;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
@@ -40,6 +41,7 @@ pub struct TermxComponents {
     pub t_button: Component<TButton, Termx>,
     pub focus_scope: Component<FocusScope, Termx>,
     pub input_element: Component<InputElement, Termx>,
+    pub static_text: Component<StaticText, Termx>,
 }
 
 pub struct TermxSystems {
@@ -125,6 +127,7 @@ impl Termx {
         let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
         let input_element: Component<InputElement, Termx> = Component::new(focus_scope, &mut world);
         let t_button: Component<TButton, Termx> = Component::new(input_element, &mut world);
+        let static_text: Component<StaticText, Termx> = Component::new(layout_view, &mut world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -138,6 +141,7 @@ impl Termx {
             t_button,
             focus_scope,
             input_element,
+            static_text,
         }));
     }
 

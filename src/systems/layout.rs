@@ -5,6 +5,7 @@ use crate::base::{ViewHAlign, ViewVAlign, label_width, Visibility};
 use crate::components::layout_view::*;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
+use crate::text_renderer::render_text;
 use int_vec_2d::{HAlign, VAlign, Thickness, Point};
 
 import! { pub layout:
@@ -181,6 +182,45 @@ fn arrange_canvas(
     inner_bounds.size
 }
 
+fn measure_static_text(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let static_text = entity.get(c.static_text, world).unwrap();
+    render_text(
+        |_, _| { },
+        Rect { tl: Point { x: 0, y: 0 }, size: Vector { x: w.unwrap_or(-1), y: h.unwrap_or(-1) } },
+        static_text.text_align().into(),
+        static_text.text_wrapping(),
+        static_text.text(),
+    ).size
+}
+
+fn arrange_static_text(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let static_text = entity.get(c.static_text, world).unwrap();
+    render_text(
+        |_, _| { },
+        inner_bounds,
+        static_text.text_align().into(),
+        static_text.text_wrapping(),
+        static_text.text(),
+    ).size
+}
+
 fn measure_t_button(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
@@ -232,6 +272,7 @@ impl Layout {
             LAYOUT_STACK_PANEL => measure_stack_panel(this, entity, world, w, h),
             LAYOUT_CANVAS => measure_canvas(this, entity, world, w, h),
             LAYOUT_T_BUTTON => measure_t_button(this, entity, world, w, h),
+            LAYOUT_STATIC_TEXT => measure_static_text(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -250,6 +291,7 @@ impl Layout {
             LAYOUT_STACK_PANEL => arrange_stack_panel(this, entity, world, inner_bounds),
             LAYOUT_CANVAS => arrange_canvas(this, entity, world, inner_bounds),
             LAYOUT_T_BUTTON => arrange_t_button(this, entity, world, inner_bounds),
+            LAYOUT_STATIC_TEXT => arrange_static_text(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

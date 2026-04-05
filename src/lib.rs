@@ -1,4 +1,5 @@
 #![feature(macro_metavar_expr_concat)]
+#![feature(slice_from_ptr_range)]
 
 #![deny(warnings)]
 #![doc(test(attr(deny(warnings))))]
@@ -31,6 +32,7 @@ pub mod termx;
 pub mod render_port;
 pub mod template;
 pub mod xaml;
+pub mod text_renderer;
 
 #[macro_export]
 macro_rules! property_ro {
@@ -243,6 +245,78 @@ macro_rules! property {
             }
         }
     };
+    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @render+measure) => {
+        $crate::paste_paste! {
+            pub fn $name(&self) -> $get_set {
+                self.$name
+            }
+
+            pub fn [< get_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+            ) -> $get_set {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                entity.get(component, &world).unwrap().$name
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $get_set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut(component, &mut world).unwrap().$name = value;
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+                $crate::systems::layout::LayoutExt::invalidate_measure(
+                    &termx.systems().layout, entity, &mut world
+                );
+            }
+        }
+    };
+    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @render+arrange) => {
+        $crate::paste_paste! {
+            pub fn $name(&self) -> $get_set {
+                self.$name
+            }
+
+            pub fn [< get_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+            ) -> $get_set {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                entity.get(component, &world).unwrap().$name
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $get_set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut(component, &mut world).unwrap().$name = value;
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+                $crate::systems::layout::LayoutExt::invalidate_arrange(
+                    &termx.systems().layout, entity, &mut world
+                );
+            }
+        }
+    };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @measure) => {
         $crate::paste_paste! {
             pub fn $name(&self) -> $get {
@@ -371,6 +445,59 @@ macro_rules! property {
                 let component = xtermx.components().$component;
                 let mut world = termx.world.borrow_mut();
                 let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+                res
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut(component, &mut world).unwrap().$name = value;
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+            }
+        }
+    };
+    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+measure) => {
+        $crate::paste_paste! {
+            pub fn $name(&self) -> $get {
+                &self.$name
+            }
+
+            pub fn [< get_ $name >] <T> (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce($get) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                f(&entity.get(component, &world).unwrap().$name)
+            }
+
+            pub fn [< get_ $name _mut >] <T> (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce(&mut $set) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
                 $crate::systems::layout::LayoutExt::invalidate_measure(
                     &termx.systems().layout, entity, &mut world
                 );
@@ -389,6 +516,65 @@ macro_rules! property {
                 entity.get_mut(component, &mut world).unwrap().$name = value;
                 $crate::systems::render::RenderExt::invalidate_render(
                     &termx.systems().render, entity, &mut world
+                );
+                $crate::systems::layout::LayoutExt::invalidate_measure(
+                    &termx.systems().layout, entity, &mut world
+                );
+            }
+        }
+    };
+    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+arrange) => {
+        $crate::paste_paste! {
+            pub fn $name(&self) -> $get {
+                &self.$name
+            }
+
+            pub fn [< get_ $name >] <T> (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce($get) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let world = termx.world.borrow();
+                f(&entity.get(component, &world).unwrap().$name)
+            }
+
+            pub fn [< get_ $name _mut >] <T> (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                f: impl FnOnce(&mut $set) -> T
+            ) -> T {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                let res = f(&mut entity.get_mut(component, &mut world).unwrap().$name);
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+                $crate::systems::layout::LayoutExt::invalidate_arrange(
+                    &termx.systems().layout, entity, &mut world
+                );
+                res
+            }
+
+            pub fn [< set_ $name >] (
+                entity: $crate::ooecs_Entity<$crate::termx::Termx>,
+                termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
+                value: $set
+            ) {
+                let xtermx = termx. [< $Termx:snake >] ();
+                let termx = termx.termx();
+                let component = xtermx.components().$component;
+                let mut world = termx.world.borrow_mut();
+                entity.get_mut(component, &mut world).unwrap().$name = value;
+                $crate::systems::render::RenderExt::invalidate_render(
+                    &termx.systems().render, entity, &mut world
+                );
+                $crate::systems::layout::LayoutExt::invalidate_arrange(
+                    &termx.systems().layout, entity, &mut world
                 );
             }
         }
