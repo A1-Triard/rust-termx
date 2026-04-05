@@ -9,14 +9,14 @@ use timer_no_std::MonoTime;
 
 pub type TimerDesc = for<'a> fn(
     entity: Entity<Termx>,
+    world: &'a mut World<Termx>,
     termx: &Rc<dyn IsTermx>,
-    world: &'a mut World<Termx>
 ) -> &'a mut Option<Timer>;
 
 pub struct Timer {
     start: MonoTime,
     duration_ms: u16,
-    action: fn(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, world: &mut World<Termx>),
+    action: fn(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>),
     next: Option<(Entity<Termx>, TimerDesc)>,
 }
 
@@ -34,7 +34,7 @@ import! { pub input:
 pub struct Input {
     termx: rc::Weak<dyn IsTermx>,
     focused: Cell<Option<Entity<Termx>>>,
-    click: Cell<Option<(Entity<Termx>, Point)>>,
+    click: Cell<Option<(Option<Entity<Termx>>, Point)>>,
     timers: Cell<Option<(Entity<Termx>, TimerDesc)>>,
     #[virt]
     handle_key: fn(entity: Entity<Termx>, world: &mut World<Termx>, clock: &MonoClock, key: Key) -> bool,
@@ -65,8 +65,10 @@ pub struct Input {
         clock: &MonoClock,
         desc: TimerDesc,
         duration_ms: u16,
-        action: fn(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, world: &mut World<Termx>),
+        action: fn(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>),
     ),
+    #[virt]
+    drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
 fn t_button_handle_click(
@@ -79,12 +81,12 @@ fn t_button_handle_click(
         entity,
         world,
         clock,
-        |entity, termx, world| {
+        |entity, world, termx| {
             let c = termx.termx().components();
             &mut entity.get_mut(c.t_button, world).unwrap().pressed
         },
         100,
-        |entity, termx, world| {
+        |entity, world, termx| {
             let c = termx.termx().components();
             if !entity.get(c.t_button, world).unwrap().is_mouse_pressed {
                 let render = &termx.termx().systems().render;
@@ -377,11 +379,11 @@ impl Input {
         clock: &MonoClock,
         desc: TimerDesc,
         duration_ms: u16,
-        action: fn(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, world: &mut World<Termx>),
+        action: fn(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>),
     ) {
         let input = this.input();
         let termx = input.termx.upgrade().unwrap();
-        let timer = desc(entity, &termx, world);
+        let timer = desc(entity, world, &termx);
         if let Some(existing_timer) = timer.as_mut() {
             existing_timer.start = clock.time();
             existing_timer.duration_ms = duration_ms;
@@ -395,6 +397,42 @@ impl Input {
             next: input.timers.get(),
         });
         input.timers.set(Some((entity, desc)));
+    }
+
+    pub fn drop_entity_impl(this: &Rc<dyn IsInput>, entity: Entity<Termx>, world: &mut World<Termx>) {
+        let input = this.input();
+        let termx = input.termx.upgrade().unwrap();
+        if let Some(mut focused) = input.focused.get() {
+            let c = termx.termx().components();
+            let clear_focus = loop {
+                if focused == entity { break true; }
+                let Some(parent) = focused.get(c.view, world).unwrap().visual_parent else { break false; };
+                focused = parent;
+            };
+            if clear_focus {
+                this.focus(None, world);
+            }
+        }
+        if let Some(click) = input.click.get() && click.0 == Some(entity) {
+            input.click.set(Some((None, click.1)));
+        }
+        let mut prev: Option<(Entity<Termx>, TimerDesc)> = None;
+        let mut cur = input.timers.get();
+        while let Some(timer) = cur {
+            let timer_data = (timer.1)(timer.0, world, &termx);
+            let next = timer_data.as_ref().unwrap().next;
+            if timer.0 == entity {
+                *timer_data = None;
+                if let Some(prev) = prev {
+                    (prev.1)(prev.0, world, &termx).as_mut().unwrap().next = next;
+                } else {
+                    input.timers.set(next);
+                }
+            } else {
+                prev = Some(timer);
+            }
+            cur = next;
+        }
     }
 
     pub fn process_impl(
@@ -411,15 +449,15 @@ impl Input {
             let mut prev: Option<(Entity<Termx>, TimerDesc)> = None;
             let mut timer = timers;
             loop {
-                let timer_ref = (timer.1)(timer.0, &termx, world);
+                let timer_ref = (timer.1)(timer.0, world, &termx);
                 let timer_data = timer_ref.as_mut().unwrap();
                 let next = timer_data.next;
                 if time.delta_ms_u16(timer_data.start).map_or(true, |x| x >= timer_data.duration_ms) {
                     let action = timer_data.action;
                     *timer_ref = None;
-                    action(timer.0, &termx, world);
+                    action(timer.0, world, &termx);
                     if let Some(prev) = prev {
-                        (prev.1)(prev.0, &termx, world).as_mut().unwrap().next = next;
+                        (prev.1)(prev.0, world, &termx).as_mut().unwrap().next = next;
                     } else {
                         input.timers.set(next);
                     }
@@ -449,14 +487,16 @@ impl Input {
                     let render = &termx.termx().systems().render;
                     if let Some(entity) = render.hit_test_input_element(point, world) {
                         let point = render.point_from_screen(entity, world, point);
-                        input.click.set(Some((entity, point)));
+                        input.click.set(Some((Some(entity), point)));
                         Self::focus_raw(this, Some(entity), world);
                         this.handle_lmb(entity, world, clock, point, Some(true));
                     }
                 },
                 Event::LmbUp(point) => {
                     if let Some((entity, point)) = input.click.take() {
-                        this.handle_lmb(entity, world, clock, point, Some(false));
+                        if let Some(entity) = entity {
+                            this.handle_lmb(entity, world, clock, point, Some(false));
+                        }
                     } else {
                         let render = &termx.termx().systems().render;
                         if let Some(entity) = render.hit_test_input_element(point, world) {

@@ -175,18 +175,7 @@ impl Termx {
         let termx = this.termx();
         let render = &termx.systems().render;
         assert_ne!(Some(entity), render.root(), "cannot drop the root entity");
-        let input = &termx.systems().input;
-        if let Some(mut focused) = input.focused() {
-            let view = termx.components().view;
-            let clear_focus = loop {
-                if focused == entity { break true; }
-                let Some(parent) = focused.get(view, world).unwrap().visual_parent else { break false; };
-                focused = parent;
-            };
-            if clear_focus {
-                input.focus(None, world);
-            }
-        }
+        termx.systems().input.drop_entity(entity, world);
         entity.drop_entity(world);
     }
 
