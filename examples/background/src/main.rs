@@ -3,6 +3,7 @@ use termx_screen_ncurses::{self};
 use termx::base::{MonoClock, World};
 use termx::components::static_text::StaticText;
 use termx::components::t_button::TButton;
+use termx::systems::input::InputExt;
 use termx::template::Template;
 use termx::termx::{Termx, TermxExt};
 use termx::xaml::{self};
@@ -18,6 +19,7 @@ fn main() {
     let text = names.find("Text").unwrap();
     let ok = names.find("Ok").unwrap();
     let cancel = names.find("Cancel").unwrap();
+    termx.termx().systems().input.focus(Some(ok), world);
     let termx_ref_1 = Rc::downgrade(&termx);
     TButton::on_click(ok, world, &termx, Some(Box::new(move |world| {
         let termx = termx_ref_1.upgrade().unwrap();
