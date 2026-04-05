@@ -30,6 +30,7 @@ import! { pub input:
     use [obj basic_oop::obj];
     use core::num::NonZeroU16;
     use crate::termx::Termx;
+    use int_vec_2d::Point;
     use ooecs::{Entity, World};
     use termx_screen_base::{Key, Event};
     use timer_no_std::MonoClock;
@@ -45,9 +46,18 @@ pub struct Input {
     pub input_element: Component<InputElement, Termx>,
     pub t_button: Component<TButton, Termx>,
     focused: Cell<Option<Entity<Termx>>>,
+    click: Cell<Option<(Entity<Termx>, Point)>>,
     timers: Cell<Option<(Entity<Termx>, TimerDesc)>>,
     #[virt]
     handle_key: fn(entity: Entity<Termx>, world: &mut World<Termx>, clock: &MonoClock, key: Key) -> bool,
+    #[virt]
+    handle_lmb: fn(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        clock: &MonoClock,
+        point: Point,
+        down: Option<bool>,
+    ) -> bool,
     #[virt]
     process: fn(world: &mut World<Termx>, clock: &MonoClock, e: Option<Event>) -> bool,
     #[non_virt]
@@ -71,6 +81,75 @@ pub struct Input {
     ),
 }
 
+fn t_button_handle_click(
+    this: &Rc<dyn IsInput>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    clock: &MonoClock,
+) {
+    let input = this.input();
+    this.timer(
+        entity,
+        world,
+        clock, 
+        |entity, termx, world| {
+            let t_button = termx.termx().components().t_button;
+            &mut entity.get_mut(t_button, world).unwrap().pressed
+        },
+        100,
+        |entity, termx, world| {
+            let t_button = termx.termx().components().t_button;
+            if !entity.get(t_button, world).unwrap().is_mouse_pressed {
+                let render = &termx.termx().systems().render;
+                render.invalidate_render(entity, world);
+                render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
+                render.set_visual_offset(entity, world, Vector::null());
+            }
+        },
+    );
+    if !entity.get(input.t_button, world).unwrap().is_mouse_pressed {
+        let termx = input.termx.upgrade().unwrap();
+        let render = &termx.termx().systems().render;
+        render.invalidate_render(entity, world);
+        render.set_shadow(entity, world, Thickness::all(0));
+        render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
+    }
+}
+
+fn t_button_handle_lmb(
+    this: &Rc<dyn IsInput>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    clock: &MonoClock,
+    _point: Point,
+    down: Option<bool>,
+) -> bool {
+    let Some(down) = down else {
+        t_button_handle_click(this, entity, world, clock);
+        return true;
+    };
+    let input = this.input();
+    let termx = input.termx.upgrade().unwrap();
+    let render = &termx.termx().systems().render;
+    let t_button = entity.get_mut(input.t_button, world).unwrap();
+    if down {
+        t_button.is_mouse_pressed = true;
+        if t_button.pressed.is_none() {
+            render.invalidate_render(entity, world);
+            render.set_shadow(entity, world, Thickness::all(0));
+            render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
+        }
+    } else {
+        t_button.is_mouse_pressed = false;
+        if t_button.pressed.is_none() {
+            render.invalidate_render(entity, world);
+            render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
+            render.set_visual_offset(entity, world, Vector::null());
+        }
+    }
+    true
+}
+
 fn t_button_handle_key(
     this: &Rc<dyn IsInput>,
     entity: Entity<Termx>,
@@ -78,30 +157,9 @@ fn t_button_handle_key(
     clock: &MonoClock,
     key: Key,
 ) -> bool {
-    let input = this.input();
     match key {
         Key::Enter => {
-            this.timer(
-                entity,
-                world,
-                clock, 
-                |entity, termx, world| {
-                    let t_button = termx.termx().components().t_button;
-                    &mut entity.get_mut(t_button, world).unwrap().pressed
-                },
-                100,
-                |entity, termx, world| {
-                    let render = &termx.termx().systems().render;
-                    render.invalidate_render(entity, world);
-                    render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
-                    render.set_visual_offset(entity, world, Vector::null());
-                },
-            );
-            let termx = input.termx.upgrade().unwrap();
-            let render = &termx.termx().systems().render;
-            render.invalidate_render(entity, world);
-            render.set_shadow(entity, world, Thickness::all(0));
-            render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
+            t_button_handle_click(this, entity, world, clock);
             true
         },
         _ => false
@@ -151,6 +209,7 @@ impl Input {
             input_element,
             t_button,
             focused: Cell::new(None),
+            click: Cell::new(None),
             timers: Cell::new(None),
         }
     }
@@ -324,6 +383,21 @@ impl Input {
         }
     }
 
+    pub fn handle_lmb_impl(
+        this: &Rc<dyn IsInput>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        clock: &MonoClock,
+        point: Point,
+        down: Option<bool>,
+    ) -> bool {
+        let input = this.input();
+        match entity.get(input.input_element, world).unwrap().input() {
+            INPUT_T_BUTTON => t_button_handle_lmb(this, entity, world, clock, point, down),
+            _ => false
+        }
+    }
+
     pub fn timer_impl(
         this: &Rc<dyn IsInput>,
         entity: Entity<Termx>,
@@ -396,6 +470,27 @@ impl Input {
                         match key {
                             Key::Tab => this.focus_next(world),
                             _ => { }
+                        }
+                    }
+                },
+                Event::LmbDown(point) => {
+                    let render = &termx.termx().systems().render;
+                    if let Some(entity) = render.hit_test_input_element(point, world) {
+                        let point = render.point_from_screen(entity, world, point);
+                        input.click.set(Some((entity, point)));
+                        Self::focus_raw(this, Some(entity), world);
+                        this.handle_lmb(entity, world, clock, point, Some(true));
+                    }
+                },
+                Event::LmbUp(point) => {
+                    if let Some((entity, point)) = input.click.take() {
+                        this.handle_lmb(entity, world, clock, point, Some(false));
+                    } else {
+                        let render = &termx.termx().systems().render;
+                        if let Some(entity) = render.hit_test_input_element(point, world) {
+                            Self::focus_raw(this, Some(entity), world);
+                            let point = render.point_from_screen(entity, world, point);
+                            this.handle_lmb(entity, world, clock, point, None);
                         }
                     }
                 },

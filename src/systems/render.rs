@@ -62,6 +62,10 @@ pub struct Render {
     #[non_virt]
     in_tree: fn(entity: Entity<Termx>, world: &World<Termx>) -> bool,
     #[non_virt]
+    point_from_screen: fn(entity: Entity<Termx>, world: &World<Termx>, point: Point) -> Point,
+    #[non_virt]
+    hit_test_input_element: fn(point: Point, world: &World<Termx>) -> Option<Entity<Termx>>,
+    #[non_virt]
     perform: fn(world: &World<Termx>, screen: &mut dyn Screen) -> Option<Point>,
 }
 
@@ -97,7 +101,7 @@ fn render_t_button(
         (t_button.color(), t_button.color_hotkey())
     };
 
-    if t_button.pressed.is_some() {
+    if t_button.pressed.is_some() || t_button.is_mouse_pressed {
         let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(inner_bounds);
         let text_align = Thickness::align(
             Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
@@ -356,6 +360,64 @@ impl Render {
             entity = parent;
         }
         false
+    }
+
+    pub fn hit_test_input_element_impl(
+        this: &Rc<dyn IsRender>,
+        point: Point,
+        world: &World<Termx>,
+    ) -> Option<Entity<Termx>> {
+        let render = this.render();
+        let mut entity = render.root.get().unwrap();
+        let view = entity.get(render.view, world).unwrap();
+        if view.visibility() != Visibility::Visible { return None; }
+        if !entity.get(render.focus_scope, world).map_or(true, |x| x.is_enabled()) { return None; }
+        let bounds = view.real_render_bounds.offset(view.visual_offset);
+        if !bounds.contains(point) { return None; }
+        let mut offset = Vector { x: bounds.l(), y: bounds.t() };
+        'o: loop {
+            let children_count = this.visual_children_count(entity, world);
+            for i in (0 .. children_count).rev() {
+                let child = this.visual_child(entity, world, i);
+                let view = child.get(render.view, world).unwrap();
+                if view.visibility() != Visibility::Visible { continue; }
+                if !child.get(render.focus_scope, world).map_or(true, |x| x.is_enabled()) { continue; }
+                let bounds = view.real_render_bounds.offset(view.visual_offset).offset(offset);
+                if !bounds.contains(point) { continue; }
+                offset = Vector { x: bounds.l(), y: bounds.t() };
+                entity = child;
+                continue 'o;
+            }
+            break;
+        }
+        while !entity.get(render.input_element, world).map_or(false, |x| x.focusable) {
+            let Some(parent) = entity.get(render.view, world).unwrap().visual_parent else { return None; };
+            entity = parent;
+        }
+        Some(entity)
+    }
+
+    pub fn point_from_screen_impl(
+        this: &Rc<dyn IsRender>,
+        mut entity: Entity<Termx>,
+        world: &World<Termx>,
+        point: Point
+    ) -> Point {
+        let render = this.render();
+        let root = render.root.get().unwrap();
+        let mut offset = Vector::null();
+        let mut in_tree = false;
+        loop {
+            in_tree = in_tree || entity == root;
+            let view = entity.get(render.view, world).unwrap();
+            let tl = view.real_render_bounds.tl;
+            offset += Vector { x: tl.x, y: tl.y };
+            offset += view.visual_offset;
+            let Some(parent) = view.visual_parent else { break; };
+            entity = parent;
+        }
+        assert!(in_tree);
+        point.offset(offset)
     }
 
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {

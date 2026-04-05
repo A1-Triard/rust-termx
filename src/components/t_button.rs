@@ -21,6 +21,7 @@ pub struct TButton {
     color_focused_hotkey: (Fg, Bg),
     color_disabled: (Fg, Bg),
     pub(crate) pressed: Option<Timer>,
+    pub(crate) is_mouse_pressed: bool,
 }
 
 impl TButton {
@@ -33,6 +34,7 @@ impl TButton {
             color_focused_hotkey: (Fg::Yellow, Bg::Green),
             color_disabled: (Fg::DarkGray, Bg::Green),
             pressed: None,
+            is_mouse_pressed: false,
         }
     }
 
