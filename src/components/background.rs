@@ -39,7 +39,7 @@ impl Background {
         bg
     }
 
-    property!(Termx, background, pattern, ref Rc<String> as Rc<String>, @render);
+    property!(Termx, background, pattern, ref Rc<String>, @render);
     property!(Termx, background, color, (Fg, Bg), @render);
 }
 

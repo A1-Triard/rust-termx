@@ -15,7 +15,7 @@ impl Panel {
         Panel { children: Vec::new() }
     }
 
-    property_ro!(Termx, panel, children, ref as [Entity<Termx>]);
+    property_ro!(Termx, panel, children, ref Vec<Entity<Termx>>);
 
     pub fn get_children_mut<T>(
         entity: Entity<Termx>,

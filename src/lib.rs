@@ -39,9 +39,9 @@ pub mod text_renderer;
 
 #[macro_export]
 macro_rules! property_ro {
-    ($Termx:ident, $component:ident, $name:ident, $get:ty) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -49,15 +49,15 @@ macro_rules! property_ro {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref as $get:ty) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -65,7 +65,7 @@ macro_rules! property_ro {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -75,13 +75,13 @@ macro_rules! property_ro {
 
 #[macro_export]
 macro_rules! property_rw {
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty) => {
         $crate::paste_paste! {
             pub fn [< get_ $name >] (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -90,20 +90,20 @@ macro_rules! property_rw {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty) => {
         $crate::paste_paste! {
             pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -112,7 +112,7 @@ macro_rules! property_rw {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 f(&mut entity.get_mut(c.$component, world).unwrap().$name)
@@ -122,7 +122,7 @@ macro_rules! property_rw {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -133,9 +133,9 @@ macro_rules! property_rw {
 
 #[macro_export]
 macro_rules! property {
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @measure) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -143,7 +143,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -152,7 +152,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -163,9 +163,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -173,7 +173,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -182,7 +182,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -193,9 +193,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @render) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @render) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -203,7 +203,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -212,7 +212,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -223,9 +223,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @render+measure) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @render+measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -233,7 +233,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -242,7 +242,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -256,9 +256,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @render+arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @render+arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -266,7 +266,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -275,7 +275,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -289,9 +289,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @measure) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -299,7 +299,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -308,7 +308,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
@@ -323,7 +323,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -334,9 +334,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -344,7 +344,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -353,7 +353,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
@@ -368,7 +368,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -379,9 +379,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @render) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -389,7 +389,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -398,7 +398,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
@@ -413,7 +413,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -424,9 +424,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+measure) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @render+measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -434,7 +434,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -443,7 +443,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
@@ -461,7 +461,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -475,9 +475,9 @@ macro_rules! property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @render+arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -485,7 +485,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -494,7 +494,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let c = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
@@ -512,7 +512,7 @@ macro_rules! property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(c.$component, world).unwrap().$name = value;
@@ -530,9 +530,9 @@ macro_rules! property {
 
 #[macro_export]
 macro_rules! layout_property {
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @measure) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -540,7 +540,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -549,7 +549,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let xc = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(xc.$component, world).unwrap().$name = value;
@@ -567,9 +567,9 @@ macro_rules! layout_property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, $get_set:ty, @arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, $ty:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get_set {
+            pub fn $name(&self) -> $ty {
                 self.$name
             }
 
@@ -577,7 +577,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> $get_set {
+            ) -> $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 entity.get(c.$component, world).unwrap().$name
             }
@@ -586,7 +586,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $get_set
+                value: $ty
             ) {
                 let xc = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(xc.$component, world).unwrap().$name = value;
@@ -604,9 +604,9 @@ macro_rules! layout_property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @measure) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -614,7 +614,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -623,7 +623,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let xc = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(xc.$component, world).unwrap().$name);
@@ -645,7 +645,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let xc = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(xc.$component, world).unwrap().$name = value;
@@ -663,9 +663,9 @@ macro_rules! layout_property {
             }
         }
     };
-    ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @arrange) => {
+    ($Termx:ident, $component:ident, $name:ident, ref $ty:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> &$get {
+            pub fn $name(&self) -> &$ty {
                 &self.$name
             }
 
@@ -673,7 +673,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-            ) -> &'a $get {
+            ) -> &'a $ty {
                 let c = termx. [< $Termx:snake >] ().components();
                 &entity.get(c.$component, world).unwrap().$name
             }
@@ -682,7 +682,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce(&mut $set) -> T
+                f: impl FnOnce(&mut $ty) -> T
             ) -> T {
                 let xc = termx. [< $Termx:snake >] ().components();
                 let res = f(&mut entity.get_mut(xc.$component, world).unwrap().$name);
@@ -704,7 +704,7 @@ macro_rules! layout_property {
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
                 world: &mut $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                value: $set
+                value: $ty
             ) {
                 let xc = termx. [< $Termx:snake >] ().components();
                 entity.get_mut(xc.$component, world).unwrap().$name = value;

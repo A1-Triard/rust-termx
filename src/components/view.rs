@@ -59,7 +59,7 @@ impl View {
         self.render
     }
 
-    property_rw!(Termx, view, name, ref String as str);
+    property_rw!(Termx, view, name, ref String);
     property_ro!(Termx, view, layout, Option<Entity<Termx>>);
 
     pub fn set_layout(
