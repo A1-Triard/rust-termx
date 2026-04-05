@@ -9,7 +9,7 @@ use crate::termx::{IsTermx, Termx};
 use ooecs::{Entity, World};
 
 pub struct StaticText {
-    text: String,
+    text: Rc<String>,
     text_align: TextAlign,
     text_wrapping: TextWrapping,
     color: (Fg, Bg),
@@ -18,7 +18,7 @@ pub struct StaticText {
 impl StaticText {
     pub fn new() -> Self {
         StaticText {
-            text: String::new(),
+            text: Rc::new(String::new()),
             text_align: TextAlign::Left,
             text_wrapping: TextWrapping::NoWrap,
             color: (Fg::LightGray, Bg::None),
@@ -37,7 +37,7 @@ impl StaticText {
         e
     }
 
-    property!(Termx, static_text, text, ref String as str, @render+measure);
+    property!(Termx, static_text, text, ref Rc<String> as Rc<String>, @render+measure);
     property!(Termx, static_text, text_align, TextAlign, @render);
     property!(Termx, static_text, text_wrapping, TextWrapping, @render+measure);
     property!(Termx, static_text, color, (Fg, Bg), @render);
@@ -90,7 +90,12 @@ macro_rules! static_text_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::layout_view_apply_template! { $this, $entity, $world, $termx, $names }
         $this.text.as_ref().map(|x|
-            $crate::components::static_text::StaticText::set_text($entity, $world, $termx, x.clone())
+            $crate::components::static_text::StaticText::set_text(
+                $entity,
+                $world,
+                $termx,
+                $crate::alloc_rc_Rc::new(x.clone())
+            )
         );
         $this.text_align.map(|x|
             $crate::components::static_text::StaticText::set_text_align($entity, $world, $termx, x)

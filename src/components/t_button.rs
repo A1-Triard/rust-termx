@@ -16,7 +16,7 @@ use crate::termx::{IsTermx, Termx};
 use ooecs::{Entity, World};
 
 pub struct TButton {
-    text: String,
+    text: Rc<String>,
     color: (Fg, Bg),
     color_hotkey: (Fg, Bg),
     color_focused: (Fg, Bg),
@@ -30,7 +30,7 @@ pub struct TButton {
 impl TButton {
     pub fn new() -> Self {
         TButton {
-            text: String::new(),
+            text: Rc::new(String::new()),
             color: (Fg::Black, Bg::Green),
             color_hotkey: (Fg::Yellow, Bg::Green),
             color_focused: (Fg::White, Bg::Green),
@@ -63,7 +63,7 @@ impl TButton {
         b
     }
 
-    property!(Termx, t_button, text, ref String as str, @measure);
+    property!(Termx, t_button, text, ref Rc<String> as Rc<String>, @measure);
     property!(Termx, t_button, color, (Fg, Bg), @render);
     property!(Termx, t_button, color_hotkey, (Fg, Bg), @render);
     property!(Termx, t_button, color_focused, (Fg, Bg), @render);
@@ -143,7 +143,12 @@ macro_rules! t_button_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::input_element_apply_template! { $this, $entity, $world, $termx, $names }
         $this.text.as_ref().map(|x|
-            $crate::components::t_button::TButton::set_text($entity, $world, $termx, x.clone())
+            $crate::components::t_button::TButton::set_text(
+                $entity,
+                $world,
+                $termx,
+                $crate::alloc_rc_Rc::new(x.clone())
+            )
         );
         $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $world, $termx, x));
         $this.color_hotkey.map(|x|

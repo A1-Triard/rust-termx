@@ -11,14 +11,14 @@ use ooecs::{Entity, World};
 use termx_screen_base::{Bg, Fg};
 
 pub struct Background {
-    pub(crate) pattern: String,
+    pub(crate) pattern: Rc<String>,
     pub(crate) color: (Fg, Bg),
 }
 
 impl Background {
     pub fn new() -> Self {
         Background {
-            pattern: "░".to_string(),
+            pattern: Rc::new("░".to_string()),
             color: (Fg::LightGray, Bg::Black),
         }
     }
@@ -39,7 +39,7 @@ impl Background {
         bg
     }
 
-    property!(Termx, background, pattern, ref String as str, @render);
+    property!(Termx, background, pattern, ref Rc<String> as Rc<String>, @render);
     property!(Termx, background, color, (Fg, Bg), @render);
 }
 
@@ -84,7 +84,12 @@ macro_rules! background_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::decorator_apply_template! { $this, $entity, $world, $termx, $names }
         $this.pattern.as_ref().map(|x|
-            $crate::components::background::Background::set_pattern($entity, $world, $termx, x.clone())
+            $crate::components::background::Background::set_pattern(
+                $entity,
+                $world,
+                $termx,
+                $crate::alloc_rc_Rc::new(x.clone())
+            )
         );
         $this.color.map(|x| $crate::components::background::Background::set_color($entity, $world, $termx, x));
     };

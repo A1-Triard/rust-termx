@@ -21,14 +21,16 @@ fn main() {
     let cancel = names.find("Cancel").unwrap();
     termx.termx().systems().input.focus(Some(ok), world);
     let termx_ref_1 = Rc::downgrade(&termx);
+    let ok_str = Rc::new("OK".to_string());
+    let cancel_str = Rc::new("Cancel".to_string());
     TButton::on_click(ok, world, &termx, Some(Box::new(move |world| {
         let termx = termx_ref_1.upgrade().unwrap();
-        StaticText::set_text(text, world, &termx, "OK".to_string());
+        StaticText::set_text(text, world, &termx, ok_str.clone());
     })));
     let termx_ref_2 = Rc::downgrade(&termx);
     TButton::on_click(cancel, world, &termx, Some(Box::new(move |world| {
         let termx = termx_ref_2.upgrade().unwrap();
-        StaticText::set_text(text, world, &termx, "Cancel".to_string());
+        StaticText::set_text(text, world, &termx, cancel_str.clone());
     })));
     termx.run(root, screen.as_mut(), world, &clock).unwrap();
 }
