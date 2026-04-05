@@ -58,10 +58,10 @@ macro_rules! input_element_template {
 
 #[macro_export]
 macro_rules! input_element_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::focus_scope_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
         $this.focusable.map(|x|
-            $crate::components::input_element::InputElement::set_focusable($entity, $termx, x)
+            $crate::components::input_element::InputElement::set_focusable($entity, $world, $termx, x)
         );
     };
 }

@@ -1,16 +1,16 @@
 <Background xmlns='https://a1-triard.github.io/termx/2026/xaml' Color="Black/LightGray" Pattern=" ">
   <Canvas>
-    <TButton Text="~O~K" Width="8">
+    <TButton Text="~O~K" Width="8" Name="Ok">
       <TButton.Layout>
         <CanvasLayout Tl="10,5" />
       </TButton.Layout>
     </TButton>
-    <TButton Text="~C~ancel">
+    <TButton Text="~C~ancel" Name="Cancel">
       <TButton.Layout>
         <CanvasLayout Tl="10,8" />
       </TButton.Layout>
     </TButton>
-    <StaticText>
+    <StaticText Name="Text">
       <StaticText.Layout>
         <CanvasLayout Tl="10,11" />
       </StaticText.Layout>

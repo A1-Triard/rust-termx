@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize, Deserializer, Serializer};
 use serde::de::{self};
 
 pub use int_vec_2d::*;
+pub use ooecs::*;
 pub use termx_screen_base::*;
 pub use timer_no_std::*;
 

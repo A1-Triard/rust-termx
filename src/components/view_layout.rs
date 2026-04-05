@@ -44,9 +44,10 @@ macro_rules! view_layout_template {
 
 #[macro_export]
 macro_rules! view_layout_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         let _ = $this;
         let _ = $entity;
+        let _ = $world;
         let _ = $termx;
         let _ = $names;
     };

@@ -4,7 +4,7 @@ use crate::property_ro;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct Panel {
     children: Vec<Entity<Termx>>,
@@ -19,42 +19,42 @@ impl Panel {
 
     pub fn get_children_mut<T>(
         entity: Entity<Termx>,
+        world: &mut World<Termx>, 
         termx: &Rc<dyn IsTermx>,
         f: impl FnOnce(&mut Vec<Entity<Termx>>) -> T,
     ) -> T {
         let termx = termx.termx();
         let component = termx.components().panel;
-        let mut world = termx.world.borrow_mut();
-        let elements = entity.get(component, &world).unwrap().children.clone();
+        let elements = entity.get(component, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, &mut world);
+            termx.systems().render.remove_visual_child(entity, element, world);
         }
-        let res = f(&mut entity.get_mut(component, &mut world).unwrap().children);
-        let elements = entity.get(component, &world).unwrap().children.clone();
+        let res = f(&mut entity.get_mut(component, world).unwrap().children);
+        let elements = entity.get(component, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.add_visual_child(entity, element, &mut world);
+            termx.systems().render.add_visual_child(entity, element, world);
         }
-        termx.systems().layout.invalidate_measure(entity, &mut world);
+        termx.systems().layout.invalidate_measure(entity, world);
         res
     }
 
     pub fn set_children(
         entity: Entity<Termx>,
+        world: &mut World<Termx>, 
         termx: &Rc<dyn IsTermx>,
         value: &Vec<Entity<Termx>>,
     ) {
         let termx = termx.termx();
         let component = termx.components().panel;
-        let mut world = termx.world.borrow_mut();
-        let elements = entity.get(component, &world).unwrap().children.clone();
+        let elements = entity.get(component, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, &mut world);
+            termx.systems().render.remove_visual_child(entity, element, world);
         }
-        entity.get_mut(component, &mut world).unwrap().children = value.clone();
+        entity.get_mut(component, world).unwrap().children = value.clone();
         for &element in value {
-            termx.systems().render.add_visual_child(entity, element, &mut world);
+            termx.systems().render.add_visual_child(entity, element, world);
         }
-        termx.systems().layout.invalidate_measure(entity, &mut world);
+        termx.systems().layout.invalidate_measure(entity, world);
     }
 }
 
@@ -95,9 +95,9 @@ macro_rules! panel_template {
 
 #[macro_export]
 macro_rules! panel_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::focus_scope_apply_template! { $this, $entity, $termx, $names }
-        let children = $this.children.iter().map(|x| x.load_content_inline($termx, $names)).collect();
-        $crate::components::panel::Panel::set_children($entity, $termx, &children);
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
+        let children = $this.children.iter().map(|x| x.load_content_inline($world, $termx, $names)).collect();
+        $crate::components::panel::Panel::set_children($entity, $world, $termx, &children);
     };
 }

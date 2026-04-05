@@ -3,7 +3,7 @@ use crate::property_ro;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct Decorator {
     child: Option<Entity<Termx>>,
@@ -16,19 +16,23 @@ impl Decorator {
 
     property_ro!(Termx, decorator, child, Option<Entity<Termx>>);
 
-    pub fn set_child(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Option<Entity<Termx>>) {
+    pub fn set_child(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        value: Option<Entity<Termx>>,
+    ) {
         let termx = termx.termx();
         let component = termx.components().decorator;
-        let mut world = termx.world.borrow_mut();
-        let old_child = entity.get(component, &mut world).unwrap().child;
+        let old_child = entity.get(component, world).unwrap().child;
         if let Some(child) = old_child {
-            termx.systems().render.remove_visual_child(entity, child, &mut world);
+            termx.systems().render.remove_visual_child(entity, child, world);
         }
-        entity.get_mut(component, &mut world).unwrap().child = value;
+        entity.get_mut(component, world).unwrap().child = value;
         if let Some(child) = value {
-            termx.systems().render.add_visual_child(entity, child, &mut world);
+            termx.systems().render.add_visual_child(entity, child, world);
         }
-        termx.systems().layout.invalidate_measure(entity, &mut world);
+        termx.systems().layout.invalidate_measure(entity, world);
     }
 }
 
@@ -63,12 +67,11 @@ macro_rules! decorator_template {
 
 #[macro_export]
 macro_rules! decorator_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::focus_scope_apply_template! { $this, $entity, $termx, $names }
-        $this.child.as_ref().map(|x| $crate::components::decorator::Decorator::set_child(
-            $entity,
-            $termx,
-            Some(x.load_content_inline($termx, $names))
-        ));
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
+        $this.child.as_ref().map(|x| {
+            let value = x.load_content_inline($world, $termx, $names);
+            $crate::components::decorator::Decorator::set_child($entity, $world, $termx, Some(value));
+        });
     };
 }

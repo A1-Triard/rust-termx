@@ -5,7 +5,7 @@ use crate::layout_property;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
 use int_vec_2d::Point;
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct CanvasLayout {
     tl: Point,
@@ -18,14 +18,13 @@ impl CanvasLayout {
         }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view_layout = termx.components().view_layout;
         let canvas_layout = termx.components().canvas_layout;
-        let mut world = termx.world.borrow_mut();
-        let cl = Entity::new(canvas_layout, &mut world);
-        cl.add(view_layout, &mut world, ViewLayout::new());
-        cl.add(canvas_layout, &mut world, CanvasLayout::new());
+        let cl = Entity::new(canvas_layout, world);
+        cl.add(view_layout, world, ViewLayout::new());
+        cl.add(canvas_layout, world, CanvasLayout::new());
         cl
     }
 
@@ -63,9 +62,9 @@ macro_rules! canvas_layout_template {
 
 #[macro_export]
 macro_rules! canvas_layout_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::view_layout_apply_template! { $this, $entity, $termx, $names }
-        $this.tl.map(|x| $crate::components::canvas_layout::CanvasLayout::set_tl($entity, $termx, x));
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::view_layout_apply_template! { $this, $entity, $world, $termx, $names }
+        $this.tl.map(|x| $crate::components::canvas_layout::CanvasLayout::set_tl($entity, $world, $termx, x));
     };
 }
 
@@ -81,12 +80,18 @@ impl Template for CanvasLayoutTemplate {
         None
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        CanvasLayout::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        CanvasLayout::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver,
+    ) {
         let this = self;
-        canvas_layout_apply_template! { this, entity, termx, names }
+        canvas_layout_apply_template! { this, entity, world, termx, names }
     }
 }

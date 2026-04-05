@@ -7,7 +7,7 @@ use crate::components::layout_view::*;
 use crate::property;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 use termx_screen_base::{Bg, Fg};
 
 pub struct Background {
@@ -23,20 +23,19 @@ impl Background {
         }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
         let focus_scope = termx.components().focus_scope;
         let decorator = termx.components().decorator;
         let background = termx.components().background;
-        let mut world = termx.world.borrow_mut();
-        let bg = Entity::new(background, &mut world);
-        bg.add(view, &mut world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
-        bg.add(layout_view, &mut world, LayoutView::new(LAYOUT_BACKGROUND));
-        bg.add(focus_scope, &mut world, FocusScope::new());
-        bg.add(decorator, &mut world, Decorator::new());
-        bg.add(background, &mut world, Background::new());
+        let bg = Entity::new(background, world);
+        bg.add(view, world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
+        bg.add(layout_view, world, LayoutView::new(LAYOUT_BACKGROUND));
+        bg.add(focus_scope, world, FocusScope::new());
+        bg.add(decorator, world, Decorator::new());
+        bg.add(background, world, Background::new());
         bg
     }
 
@@ -82,12 +81,12 @@ macro_rules! background_template {
 
 #[macro_export]
 macro_rules! background_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::decorator_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::decorator_apply_template! { $this, $entity, $world, $termx, $names }
         $this.pattern.as_ref().map(|x|
-            $crate::components::background::Background::set_pattern($entity, $termx, x.clone())
+            $crate::components::background::Background::set_pattern($entity, $world, $termx, x.clone())
         );
-        $this.color.map(|x| $crate::components::background::Background::set_color($entity, $termx, x));
+        $this.color.map(|x| $crate::components::background::Background::set_color($entity, $world, $termx, x));
     };
 }
 
@@ -103,12 +102,18 @@ impl Template for BackgroundTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        Background::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        Background::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver,
+    ) {
         let this = self;
-        background_apply_template! { this, entity, termx, names }
+        background_apply_template! { this, entity, world, termx, names }
     }
 }

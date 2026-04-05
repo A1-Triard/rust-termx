@@ -188,17 +188,29 @@ macro_rules! layout_view_template {
 
 #[macro_export]
 macro_rules! layout_view_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::view_apply_template! { $this, $entity, $termx, $names }
-        $this.width.map(|x| $crate::components::layout_view::LayoutView::set_width($entity, $termx, x));
-        $this.height.map(|x| $crate::components::layout_view::LayoutView::set_height($entity, $termx, x));
-        $this.min_size.map(|x| $crate::components::layout_view::LayoutView::set_min_size($entity, $termx, x));
-        $this.max_width.map(|x| $crate::components::layout_view::LayoutView::set_max_width($entity, $termx, x));
-        $this.max_height.map(|x|
-            $crate::components::layout_view::LayoutView::set_max_height($entity, $termx, x)
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::view_apply_template! { $this, $entity, $world, $termx, $names }
+        $this.width.map(|x| $crate::components::layout_view::LayoutView::set_width($entity, $world, $termx, x));
+        $this.height.map(|x|
+            $crate::components::layout_view::LayoutView::set_height($entity, $world, $termx, x)
         );
-        $this.h_align.map(|x| $crate::components::layout_view::LayoutView::set_h_align($entity, $termx, x));
-        $this.v_align.map(|x| $crate::components::layout_view::LayoutView::set_v_align($entity, $termx, x));
-        $this.margin.map(|x| $crate::components::layout_view::LayoutView::set_margin($entity, $termx, x)); 
+        $this.min_size.map(|x|
+            $crate::components::layout_view::LayoutView::set_min_size($entity, $world, $termx, x)
+        );
+        $this.max_width.map(|x|
+            $crate::components::layout_view::LayoutView::set_max_width($entity, $world, $termx, x)
+        );
+        $this.max_height.map(|x|
+            $crate::components::layout_view::LayoutView::set_max_height($entity, $world, $termx, x)
+        );
+        $this.h_align.map(|x|
+            $crate::components::layout_view::LayoutView::set_h_align($entity, $world, $termx, x)
+        );
+        $this.v_align.map(|x|
+            $crate::components::layout_view::LayoutView::set_v_align($entity, $world, $termx, x)
+        );
+        $this.margin.map(|x|
+            $crate::components::layout_view::LayoutView::set_margin($entity, $world, $termx, x)
+        ); 
     };
 }

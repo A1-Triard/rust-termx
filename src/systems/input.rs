@@ -103,6 +103,9 @@ fn t_button_handle_click(
         render.set_shadow(entity, world, Thickness::all(0));
         render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
     }
+    let mut handler = entity.get_mut(c.t_button, world).unwrap().click_handler.begin_invoke();
+    handler.as_mut().map(|f| f(world));
+    entity.get_mut(c.t_button, world).unwrap().click_handler.end_invoke(handler);
 }
 
 fn t_button_handle_lmb(
@@ -129,6 +132,9 @@ fn t_button_handle_lmb(
             render.set_shadow(entity, world, Thickness::all(0));
             render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
         }
+        let mut handler = entity.get_mut(c.t_button, world).unwrap().click_handler.begin_invoke();
+        handler.as_mut().map(|f| f(world));
+        entity.get_mut(c.t_button, world).unwrap().click_handler.end_invoke(handler);
     } else {
         t_button.is_mouse_pressed = false;
         if t_button.pressed.is_none() {

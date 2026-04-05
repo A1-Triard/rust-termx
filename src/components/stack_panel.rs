@@ -7,7 +7,7 @@ use crate::components::view::*;
 use crate::property;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct StackPanel {
     vertical: bool,
@@ -18,20 +18,19 @@ impl StackPanel {
         StackPanel { vertical: true }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
         let focus_scope = termx.components().focus_scope;
         let panel = termx.components().panel;
         let stack_panel = termx.components().stack_panel;
-        let mut world = termx.world.borrow_mut();
-        let p = Entity::new(stack_panel, &mut world);
-        p.add(view, &mut world, View::new(TREE_PANEL, RENDER_NONE));
-        p.add(layout_view, &mut world, LayoutView::new(LAYOUT_STACK_PANEL));
-        p.add(focus_scope, &mut world, FocusScope::new());
-        p.add(panel, &mut world, Panel::new());
-        p.add(stack_panel, &mut world, StackPanel::new());
+        let p = Entity::new(stack_panel, world);
+        p.add(view, world, View::new(TREE_PANEL, RENDER_NONE));
+        p.add(layout_view, world, LayoutView::new(LAYOUT_STACK_PANEL));
+        p.add(focus_scope, world, FocusScope::new());
+        p.add(panel, world, Panel::new());
+        p.add(stack_panel, world, StackPanel::new());
         p
     }
 
@@ -69,10 +68,10 @@ macro_rules! stack_panel_template {
 
 #[macro_export]
 macro_rules! stack_panel_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::panel_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::panel_apply_template! { $this, $entity, $world, $termx, $names }
         $this.vertical.map(|x|
-            $crate::components::stack_panel::StackPanel::set_vertical($entity, $termx, x)
+            $crate::components::stack_panel::StackPanel::set_vertical($entity, $world, $termx, x)
         );
     };
 }
@@ -89,12 +88,18 @@ impl Template for StackPanelTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        StackPanel::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        StackPanel::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver
+    ) {
         let this = self;
-        stack_panel_apply_template! { this, entity, termx, names }
+        stack_panel_apply_template! { this, entity, world, termx, names }
     }
 }

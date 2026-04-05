@@ -62,13 +62,12 @@ impl<'a, T> Deref for Ref<'a, T> {
 
 #[class_unsafe(inherits_Obj)]
 pub struct Termx {
-    pub world: RefCell<World<Termx>>,
     components: RefCell<Option<TermxComponents>>,
     systems: RefCell<Option<TermxSystems>>,
     #[virt]
-    init: fn(),
+    init: fn(world: &mut World<Termx>),
     #[virt]
-    init_components: fn(),
+    init_components: fn(world: &mut World<Termx>),
     #[virt]
     init_systems: fn(),
     #[virt]
@@ -78,22 +77,26 @@ pub struct Termx {
     #[virt]
     create_input: fn() -> Rc<dyn IsInput>,
     #[non_virt]
-    run: fn(root: Entity<Termx>, screen: &mut dyn Screen, clock: &MonoClock) -> Result<(), Error>,
+    run: fn(
+        root: Entity<Termx>,
+        screen: &mut dyn Screen,
+        world: &mut World<Termx>,
+        clock: &MonoClock,
+    ) -> Result<(), Error>,
     #[virt]
     drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
 impl Termx {
-    pub fn new() -> Rc<dyn IsTermx> {
+    pub fn new(world: &mut World<Termx>) -> Rc<dyn IsTermx> {
         let res: Rc<dyn IsTermx> = Rc::new(unsafe { Self::new_raw(TERMX_VTABLE.as_ptr()) });
-        res.init();
+        res.init(world);
         res
     }
 
     pub unsafe fn new_raw(vtable: Vtable) -> Self {
         Termx {
             obj: unsafe { Obj::new_raw(vtable) },
-            world: RefCell::new(World::new()),
             components: RefCell::new(None),
             systems: RefCell::new(None),
         }
@@ -107,27 +110,26 @@ impl Termx {
         Ref(self.systems.borrow())
     }
 
-    pub fn init_impl(this: &Rc<dyn IsTermx>) {
-        this.init_components();
+    pub fn init_impl(this: &Rc<dyn IsTermx>, world: &mut World<Termx>) {
+        this.init_components(world);
         this.init_systems();
     }
 
-    pub fn init_components_impl(this: &Rc<dyn IsTermx>) {
+    pub fn init_components_impl(this: &Rc<dyn IsTermx>, world: &mut World<Termx>) {
         let termx = this.termx();
-        let mut world = termx.world.borrow_mut();
-        let view: Component<View, Termx> = Component::new_base(&mut world);
-        let layout_view: Component<LayoutView, Termx> = Component::new(view, &mut world);
-        let focus_scope: Component<FocusScope, Termx> = Component::new(layout_view, &mut world);
-        let decorator: Component<Decorator, Termx> = Component::new(focus_scope, &mut world);
-        let panel: Component<Panel, Termx> = Component::new(focus_scope, &mut world);
-        let view_layout: Component<ViewLayout, Termx> = Component::new_base(&mut world);
-        let background: Component<Background, Termx> = Component::new(decorator, &mut world);
-        let stack_panel: Component<StackPanel, Termx> = Component::new(panel, &mut world);
-        let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, &mut world);
-        let canvas: Component<Canvas, Termx> = Component::new(panel, &mut world);
-        let input_element: Component<InputElement, Termx> = Component::new(focus_scope, &mut world);
-        let t_button: Component<TButton, Termx> = Component::new(input_element, &mut world);
-        let static_text: Component<StaticText, Termx> = Component::new(layout_view, &mut world);
+        let view: Component<View, Termx> = Component::new_base(world);
+        let layout_view: Component<LayoutView, Termx> = Component::new(view, world);
+        let focus_scope: Component<FocusScope, Termx> = Component::new(layout_view, world);
+        let decorator: Component<Decorator, Termx> = Component::new(focus_scope, world);
+        let panel: Component<Panel, Termx> = Component::new(focus_scope, world);
+        let view_layout: Component<ViewLayout, Termx> = Component::new_base(world);
+        let background: Component<Background, Termx> = Component::new(decorator, world);
+        let stack_panel: Component<StackPanel, Termx> = Component::new(panel, world);
+        let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, world);
+        let canvas: Component<Canvas, Termx> = Component::new(panel, world);
+        let input_element: Component<InputElement, Termx> = Component::new(focus_scope, world);
+        let t_button: Component<TButton, Termx> = Component::new(input_element, world);
+        let static_text: Component<StaticText, Termx> = Component::new(layout_view, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -192,20 +194,20 @@ impl Termx {
         this: &Rc<dyn IsTermx>,
         root: Entity<Termx>,
         screen: &mut dyn Screen,
+        world: &mut World<Termx>,
         clock: &MonoClock,
     ) -> Result<(), Error> {
         const FPS: u16 = 40;
         let termx = this.termx();
-        let mut world = termx.world.borrow_mut();
-        termx.systems().render.set_root(Some(root), &mut world);
+        termx.systems().render.set_root(Some(root), world);
         let mut wait = true;
         let mut time = clock.time();
         loop {
             let screen_size = screen.size();
-            termx.systems().layout.perform(root, &mut world, screen_size);
-            let cursor = termx.systems().render.perform(&mut world, screen);
+            termx.systems().layout.perform(root, world, screen_size);
+            let cursor = termx.systems().render.perform(world, screen);
             let e = screen.update(cursor, wait)?;
-            wait = termx.systems().input.process(&mut world, clock, e);
+            wait = termx.systems().input.process(world, clock, e);
             let ms = time.split_ms_u16(clock).unwrap_or(u16::MAX);
             if !wait {
                 assert!(FPS != 0 && u16::MAX / FPS > 8);

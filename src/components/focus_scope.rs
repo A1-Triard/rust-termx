@@ -2,7 +2,7 @@ use alloc::rc::Rc;
 use crate::property_rw;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct FocusScope {
     pub(crate) is_enabled_core: bool,
@@ -23,22 +23,25 @@ impl FocusScope {
         self.is_enabled_core && self.parent_is_enabled
     }
 
-    pub fn get_is_enabled(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>) -> bool {
+    pub fn get_is_enabled(entity: Entity<Termx>, world: &World<Termx>, termx: &Rc<dyn IsTermx>) -> bool {
         let termx = termx.termx();
         let focus_scope = termx.components().focus_scope;
-        let world = termx.world.borrow();
-        entity.get(focus_scope, &world).unwrap().is_enabled()
+        entity.get(focus_scope, world).unwrap().is_enabled()
     }
 
-    pub fn set_is_enabled(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: bool) {
+    pub fn set_is_enabled(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        value: bool
+    ) {
         let termx = termx.termx();
         let focus_scope = termx.components().focus_scope;
-        let mut world = termx.world.borrow_mut();
-        let component = entity.get_mut(focus_scope, &mut world).unwrap();
+        let component = entity.get_mut(focus_scope, world).unwrap();
         component.is_enabled_core = value;
         let parent_is_enabled = component.parent_is_enabled;
         if parent_is_enabled {
-            termx.systems().render.is_enabled_changed(entity, &mut world, value);
+            termx.systems().render.is_enabled_changed(entity, world, value);
         }
     }
 
@@ -79,13 +82,13 @@ macro_rules! focus_scope_template {
 
 #[macro_export]
 macro_rules! focus_scope_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::layout_view_apply_template! { $this, $entity, $world, $termx, $names }
         $this.is_enabled.map(|x|
-            $crate::components::focus_scope::FocusScope::set_is_enabled($entity, $termx, x)
+            $crate::components::focus_scope::FocusScope::set_is_enabled($entity, $world, $termx, x)
         );
         $this.tab_index.map(|x|
-            $crate::components::focus_scope::FocusScope::set_tab_index($entity, $termx, x)
+            $crate::components::focus_scope::FocusScope::set_tab_index($entity, $world, $termx, x)
         );
     };
 }

@@ -6,7 +6,7 @@ use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct Canvas { }
 
@@ -15,20 +15,19 @@ impl Canvas {
         Canvas { }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx = termx.termx();
         let view = termx.components().view;
         let layout_view = termx.components().layout_view;
         let focus_scope = termx.components().focus_scope;
         let panel = termx.components().panel;
         let canvas = termx.components().canvas;
-        let mut world = termx.world.borrow_mut();
-        let p = Entity::new(canvas, &mut world);
-        p.add(view, &mut world, View::new(TREE_PANEL, RENDER_NONE));
-        p.add(layout_view, &mut world, LayoutView::new(LAYOUT_CANVAS));
-        p.add(focus_scope, &mut world, FocusScope::new());
-        p.add(panel, &mut world, Panel::new());
-        p.add(canvas, &mut world, Canvas::new());
+        let p = Entity::new(canvas, world);
+        p.add(view, world, View::new(TREE_PANEL, RENDER_NONE));
+        p.add(layout_view, world, LayoutView::new(LAYOUT_CANVAS));
+        p.add(focus_scope, world, FocusScope::new());
+        p.add(panel, world, Panel::new());
+        p.add(canvas, world, Canvas::new());
         p
     }
 }
@@ -61,8 +60,8 @@ macro_rules! canvas_template {
 
 #[macro_export]
 macro_rules! canvas_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::panel_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::panel_apply_template! { $this, $entity, $world, $termx, $names }
     };
 }
 
@@ -78,12 +77,18 @@ impl Template for CanvasTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        Canvas::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        Canvas::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver
+    ) {
         let this = self;
-        canvas_apply_template! { this, entity, termx, names }
+        canvas_apply_template! { this, entity, world, termx, names }
     }
 }

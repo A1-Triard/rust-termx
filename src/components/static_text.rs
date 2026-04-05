@@ -6,7 +6,7 @@ use crate::components::layout_view::*;
 use crate::components::view::*;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct StaticText {
     text: String,
@@ -25,16 +25,15 @@ impl StaticText {
         }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         let termx_inner = termx.termx();
         let view = termx_inner.components().view;
         let layout_view = termx_inner.components().layout_view;
         let static_text = termx_inner.components().static_text;
-        let mut world = termx_inner.world.borrow_mut();
-        let e = Entity::new(static_text, &mut world);
-        e.add(view, &mut world, View::new(TREE_NONE, RENDER_STATIC_TEXT));
-        e.add(layout_view, &mut world, LayoutView::new(LAYOUT_STATIC_TEXT));
-        e.add(static_text, &mut world, StaticText::new());
+        let e = Entity::new(static_text, world);
+        e.add(view, world, View::new(TREE_NONE, RENDER_STATIC_TEXT));
+        e.add(layout_view, world, LayoutView::new(LAYOUT_STATIC_TEXT));
+        e.add(static_text, world, StaticText::new());
         e
     }
 
@@ -88,19 +87,19 @@ macro_rules! static_text_template {
 
 #[macro_export]
 macro_rules! static_text_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::layout_view_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::layout_view_apply_template! { $this, $entity, $world, $termx, $names }
         $this.text.as_ref().map(|x|
-            $crate::components::static_text::StaticText::set_text($entity, $termx, x.clone())
+            $crate::components::static_text::StaticText::set_text($entity, $world, $termx, x.clone())
         );
         $this.text_align.map(|x|
-            $crate::components::static_text::StaticText::set_text_align($entity, $termx, x)
+            $crate::components::static_text::StaticText::set_text_align($entity, $world, $termx, x)
         );
         $this.text_wrapping.map(|x|
-            $crate::components::static_text::StaticText::set_text_wrapping($entity, $termx, x)
+            $crate::components::static_text::StaticText::set_text_wrapping($entity, $world, $termx, x)
         );
         $this.color.map(|x|
-            $crate::components::static_text::StaticText::set_color($entity, $termx, x)
+            $crate::components::static_text::StaticText::set_color($entity, $world, $termx, x)
         );
     };
 }
@@ -117,12 +116,18 @@ impl Template for StaticTextTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        StaticText::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        StaticText::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver,
+    ) {
         let this = self;
-        static_text_apply_template! { this, entity, termx, names }
+        static_text_apply_template! { this, entity, world, termx, names }
     }
 }

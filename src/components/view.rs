@@ -7,7 +7,7 @@ use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::{Termx, IsTermx};
 use int_vec_2d::{Rect, Point, Vector, Thickness};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct View {
     pub(crate) visual_parent: Option<Entity<Termx>>,
@@ -62,33 +62,41 @@ impl View {
     property_rw!(Termx, view, name, ref String as &str);
     property_ro!(Termx, view, layout, Option<Entity<Termx>>);
 
-    pub fn set_layout(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Option<Entity<Termx>>) {
+    pub fn set_layout(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        value: Option<Entity<Termx>>
+    ) {
         let termx = termx.termx();
         let component = termx.components().view;
         let view_layout = termx.components().view_layout;
-        let mut world = termx.world.borrow_mut();
-        let old_layout = entity.get(component, &world).unwrap().layout;
+        let old_layout = entity.get(component, world).unwrap().layout;
         if let Some(old_layout) = old_layout {
-            old_layout.get_mut(view_layout, &mut world).unwrap().owner = None;
+            old_layout.get_mut(view_layout, world).unwrap().owner = None;
         }
-        let view = entity.get_mut(component, &mut world).unwrap();
+        let view = entity.get_mut(component, world).unwrap();
         view.layout = value;
         let parent = view.visual_parent;
         if let Some(new_layout) = value {
-            new_layout.get_mut(view_layout, &mut world).unwrap().owner = Some(entity);
+            new_layout.get_mut(view_layout, world).unwrap().owner = Some(entity);
         }
         if let Some(parent) = parent {
-            termx.systems().layout.invalidate_measure(parent, &mut world);
+            termx.systems().layout.invalidate_measure(parent, world);
         }
     }
 
     property_ro!(Termx, view, visibility, Visibility);
 
-    pub fn set_visibility(entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, value: Visibility) {
+    pub fn set_visibility(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        value: Visibility
+    ) {
         let termx = termx.termx();
         let component = termx.components().view;
-        let mut world = termx.world.borrow_mut();
-        let view = entity.get_mut(component, &mut world).unwrap();
+        let view = entity.get_mut(component, world).unwrap();
         let old_visibility = replace(&mut view.visibility, value);
         let (invalidate_measure, invalidate_render) = match (old_visibility, value) {
             (Visibility::Visible, Visibility::Collapsed) => (true, false),
@@ -100,10 +108,10 @@ impl View {
             _ => (false, false),
         };
         if invalidate_measure {
-            termx.systems().layout.invalidate_measure(entity, &mut world);
+            termx.systems().layout.invalidate_measure(entity, world);
         }
         if invalidate_render {
-            termx.systems().render.invalidate_render(entity, &mut world);
+            termx.systems().render.invalidate_render(entity, world);
         }
     }
 }
@@ -151,14 +159,13 @@ macro_rules! view_template {
 
 #[macro_export]
 macro_rules! view_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         let _ = $names;
-        $crate::components::view::View::set_name($entity, $termx, $this.name.clone());
-        $this.layout.as_ref().map(|x| $crate::components::view::View::set_layout(
-            $entity,
-            $termx,
-            Some(x.load_content_inline($termx, $names))
-        ));
-        $this.visibility.map(|x| $crate::components::view::View::set_visibility($entity, $termx, x));
+        $crate::components::view::View::set_name($entity, $world, $termx, $this.name.clone());
+        $this.layout.as_ref().map(|x| {
+            let value = x.load_content_inline($world, $termx, $names);
+            $crate::components::view::View::set_layout($entity, $world, $termx, Some(value));
+        });
+        $this.visibility.map(|x| $crate::components::view::View::set_visibility($entity, $world, $termx, x));
     };
 }

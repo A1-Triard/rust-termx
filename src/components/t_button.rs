@@ -1,17 +1,19 @@
 use alloc::string::String;
 use alloc::rc::Rc;
+use alloc::boxed::Box;
 use crate::base::{Fg, Bg};
 use crate::components::view::*;
 use crate::components::layout_view::*;
 use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::*;
+use crate::event_handler::EventHandler;
 use crate::systems::render::RenderExt;
 use int_vec_2d::Thickness;
 use crate::property;
 use crate::systems::input::Timer;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
-use ooecs::Entity;
+use ooecs::{Entity, World};
 
 pub struct TButton {
     text: String,
@@ -22,6 +24,7 @@ pub struct TButton {
     color_disabled: (Fg, Bg),
     pub(crate) pressed: Option<Timer>,
     pub(crate) is_mouse_pressed: bool,
+    pub(crate) click_handler: EventHandler<Option<Box<dyn FnMut(&mut World<Termx>)>>>,
 }
 
 impl TButton {
@@ -35,28 +38,28 @@ impl TButton {
             color_disabled: (Fg::DarkGray, Bg::Green),
             pressed: None,
             is_mouse_pressed: false,
+            click_handler: Default::default(),
         }
     }
 
-    pub fn new_entity(termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        let termx_inner = termx.termx();
-        let view = termx_inner.components().view;
-        let layout_view = termx_inner.components().layout_view;
-        let focus_scope = termx_inner.components().focus_scope;
-        let input_element = termx_inner.components().input_element;
-        let t_button = termx_inner.components().t_button;
-        let b = {
-            let mut world = termx_inner.world.borrow_mut();
-            let b = Entity::new(t_button, &mut world);
-            b.add(view, &mut world, View::new(TREE_NONE, RENDER_T_BUTTON));
-            b.add(layout_view, &mut world, LayoutView::new(LAYOUT_T_BUTTON));
-            b.add(focus_scope, &mut world, FocusScope::new());
-            b.add(input_element, &mut world, InputElement::new(INPUT_T_BUTTON));
-            b.add(t_button, &mut world, TButton::new());
-            b
-        };
-        let mut world = termx_inner.world.borrow_mut();
-        termx_inner.systems().render.set_shadow(b, &mut world, Thickness::new(0, 0, 1, 1));
+    pub fn init(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        termx.termx().systems().render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
+    }
+
+    pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        let termx_ = termx.termx();
+        let view = termx_.components().view;
+        let layout_view = termx_.components().layout_view;
+        let focus_scope = termx_.components().focus_scope;
+        let input_element = termx_.components().input_element;
+        let t_button = termx_.components().t_button;
+        let b = Entity::new(t_button, world);
+        b.add(view, world, View::new(TREE_NONE, RENDER_T_BUTTON));
+        b.add(layout_view, world, LayoutView::new(LAYOUT_T_BUTTON));
+        b.add(focus_scope, world, FocusScope::new());
+        b.add(input_element, world, InputElement::new(INPUT_T_BUTTON));
+        b.add(t_button, world, TButton::new());
+        Self::init(b, world, termx);
         b
     }
 
@@ -66,6 +69,17 @@ impl TButton {
     property!(Termx, t_button, color_focused, (Fg, Bg), @render);
     property!(Termx, t_button, color_focused_hotkey, (Fg, Bg), @render);
     property!(Termx, t_button, color_disabled, (Fg, Bg), @render);
+
+    pub fn on_click(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>, 
+        termx: &Rc<dyn IsTermx>,
+        handler: Option<Box<dyn FnMut(&mut World<Termx>)>>,
+    ) {
+        let termx = termx.termx();
+        let c = termx.components();
+        entity.get_mut(c.t_button, world).unwrap().click_handler.set(handler);
+    }
 }
 
 #[macro_export]
@@ -126,21 +140,23 @@ macro_rules! t_button_template {
 
 #[macro_export]
 macro_rules! t_button_apply_template {
-    ($this:ident, $entity:ident, $termx:expr, $names:ident) => {
-        $crate::input_element_apply_template! { $this, $entity, $termx, $names }
+    ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
+        $crate::input_element_apply_template! { $this, $entity, $world, $termx, $names }
         $this.text.as_ref().map(|x|
-            $crate::components::t_button::TButton::set_text($entity, $termx, x.clone())
+            $crate::components::t_button::TButton::set_text($entity, $world, $termx, x.clone())
         );
-        $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $termx, x));
-        $this.color_hotkey.map(|x| $crate::components::t_button::TButton::set_color_hotkey($entity, $termx, x));
+        $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $world, $termx, x));
+        $this.color_hotkey.map(|x|
+            $crate::components::t_button::TButton::set_color_hotkey($entity, $world, $termx, x)
+        );
         $this.color_focused.map(
-            |x| $crate::components::t_button::TButton::set_color_focused($entity, $termx, x)
+            |x| $crate::components::t_button::TButton::set_color_focused($entity, $world, $termx, x)
         );
         $this.color_focused_hotkey.map(
-            |x| $crate::components::t_button::TButton::set_color_focused_hotkey($entity, $termx, x)
+            |x| $crate::components::t_button::TButton::set_color_focused_hotkey($entity, $world, $termx, x)
         );
         $this.color_disabled.map(
-            |x| $crate::components::t_button::TButton::set_color_disabled($entity, $termx, x)
+            |x| $crate::components::t_button::TButton::set_color_disabled($entity, $world, $termx, x)
         );
     };
 }
@@ -157,12 +173,18 @@ impl Template for TButtonTemplate {
         Some(&self.name)
     }
 
-    fn create_entity(&self, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        TButton::new_entity(termx)
+    fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
+        TButton::new_entity(world, termx)
     }
 
-    fn apply(&self, entity: Entity<Termx>, termx: &Rc<dyn IsTermx>, names: &mut NameResolver) {
+    fn apply(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        names: &mut NameResolver,
+    ) {
         let this = self;
-        t_button_apply_template! { this, entity, termx, names }
+        t_button_apply_template! { this, entity, world, termx, names }
     }
 }
