@@ -3,18 +3,11 @@ use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use core::cmp::min;
 use crate::base::{label_width, Visibility};
-use crate::components::background::Background;
-use crate::components::input_element::InputElement;
-use crate::components::t_button::TButton;
-use crate::components::decorator::Decorator;
-use crate::components::focus_scope::FocusScope;
-use crate::components::panel::Panel;
 use crate::components::view::*;
 use crate::render_port::RenderPort;
 use crate::systems::input::InputExt;
 use crate::termx::IsTermx;
 use int_vec_2d::{Vector, Point, Rect, Thickness, HAlign, VAlign};
-use ooecs::Component;
 
 import! { pub render:
     use [obj basic_oop::obj];
@@ -26,13 +19,6 @@ import! { pub render:
 #[class_unsafe(inherits_Obj)]
 pub struct Render {
     termx: rc::Weak<dyn IsTermx>,
-    pub view: Component<View, Termx>,
-    pub decorator: Component<Decorator, Termx>,
-    pub panel: Component<Panel, Termx>,
-    pub background: Component<Background, Termx>,
-    pub t_button: Component<TButton, Termx>,
-    pub focus_scope: Component<FocusScope, Termx>,
-    pub input_element: Component<InputElement, Termx>,
     cursor: Cell<Option<Point>>,
     invalidated_rect: Cell<Rect>,
     screen_rect: Cell<Rect>,
@@ -77,7 +63,9 @@ fn render_background(
     _inner_bounds: Rect,
 ) {
     let render = this.render();
-    let background = entity.get(render.background, world).unwrap();
+    let termx = render.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let background = entity.get(c.background, world).unwrap();
     rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
 }
 
@@ -89,9 +77,12 @@ fn render_t_button(
     inner_bounds: Rect,
 ) {
     let render = this.render();
-    let t_button = entity.get(render.t_button, world).unwrap();
-    let is_enabled = entity.get(render.focus_scope, world).unwrap().is_enabled();
-    let is_focused = entity.get(render.input_element, world).unwrap().is_focused;
+    let termx = render.termx.upgrade().unwrap();
+    let termx = termx.termx();
+    let c = termx.components();
+    let t_button = entity.get(c.t_button, world).unwrap();
+    let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
 
     let (color, color_hotkey) = if !is_enabled {
         (t_button.color_disabled(), t_button.color_disabled())
@@ -133,50 +124,14 @@ fn render_t_button(
 }
 
 impl Render {
-    pub fn new(
-        termx: &Rc<dyn IsTermx>,
-        view: Component<View, Termx>,
-        decorator: Component<Decorator, Termx>,
-        panel: Component<Panel, Termx>,
-        background: Component<Background, Termx>,
-        t_button: Component<TButton, Termx>,
-        focus_scope: Component<FocusScope, Termx>,
-        input_element: Component<InputElement, Termx>,
-    ) -> Rc<dyn IsRender> {
-        Rc::new(unsafe { Self::new_raw(
-            termx,
-            view,
-            decorator,
-            panel,
-            background,
-            t_button,
-            focus_scope,
-            input_element,
-            RENDER_VTABLE.as_ptr(),
-        ) })
+    pub fn new(termx: &Rc<dyn IsTermx>) -> Rc<dyn IsRender> {
+        Rc::new(unsafe { Self::new_raw(termx, RENDER_VTABLE.as_ptr()) })
     }
 
-    pub unsafe fn new_raw(
-        termx: &Rc<dyn IsTermx>,
-        view: Component<View, Termx>,
-        decorator: Component<Decorator, Termx>,
-        panel: Component<Panel, Termx>,
-        background: Component<Background, Termx>,
-        t_button: Component<TButton, Termx>,
-        focus_scope: Component<FocusScope, Termx>,
-        input_element: Component<InputElement, Termx>,
-        vtable: Vtable,
-    ) -> Self {
+    pub unsafe fn new_raw(termx: &Rc<dyn IsTermx>, vtable: Vtable) -> Self {
         Render {
             obj: unsafe { Obj::new_raw(vtable) },
             termx: Rc::downgrade(termx),
-            view,
-            decorator,
-            panel,
-            background,
-            t_button,
-            focus_scope,
-            input_element,
             cursor: Cell::new(None),
             invalidated_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
             screen_rect: Cell::new(Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() }),
@@ -190,13 +145,16 @@ impl Render {
         world: &World<Termx>,
     ) -> usize {
         let render = this.render();
-        match entity.get(render.view, world).unwrap().tree() {
+        let termx = render.termx.upgrade().unwrap();
+        let termx = termx.termx();
+        let c = termx.components();
+        match entity.get(c.view, world).unwrap().tree() {
             TREE_DECORATOR => {
-                let decorator = entity.get(render.decorator, world).unwrap();
+                let decorator = entity.get(c.decorator, world).unwrap();
                 if decorator.child().is_some() { 1 } else { 0 }
             },
             TREE_PANEL => {
-                let panel = entity.get(render.panel, world).unwrap();
+                let panel = entity.get(c.panel, world).unwrap();
                 panel.children().len()
             },
             _ => 0,
@@ -210,14 +168,17 @@ impl Render {
         index: usize,
     ) -> Entity<Termx> {
         let render = this.render();
-        match entity.get(render.view, world).unwrap().tree() {
+        let termx = render.termx.upgrade().unwrap();
+        let termx = termx.termx();
+        let c = termx.components();
+        match entity.get(c.view, world).unwrap().tree() {
             TREE_DECORATOR => {
-                let decorator = entity.get(render.decorator, world).unwrap();
+                let decorator = entity.get(c.decorator, world).unwrap();
                 assert_eq!(index, 0);
                 decorator.child().unwrap()
             },
             TREE_PANEL => {
-                let panel = entity.get(render.panel, world).unwrap();
+                let panel = entity.get(c.panel, world).unwrap();
                 panel.children()[index]
             },
             _ => panic!(),
@@ -232,7 +193,9 @@ impl Render {
         inner_bounds: Rect,
     ) {
         let render = this.render();
-        match entity.get(render.view, world).unwrap().render() {
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        match entity.get(c.view, world).unwrap().render() {
             RENDER_BACKGROUND => render_background(this, entity, world, rp, inner_bounds),
             RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
             _ => { },
@@ -246,11 +209,13 @@ impl Render {
         is_enabled: bool,
     ) {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         this.invalidate_render(entity, world);
         let children_count = this.visual_children_count(entity, world);
         for i in 0 .. children_count {
             let child = this.visual_child(entity, world, i);
-            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+            let changed = if let Some(focus_scope) = child.get_mut(c.focus_scope, world) {
                 if focus_scope.is_enabled_core {
                     focus_scope.parent_is_enabled = is_enabled;
                     true
@@ -273,16 +238,18 @@ impl Render {
         world: &mut World<Termx>,
     ) {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         assert_ne!(Some(child), render.root.get());
-        child.get_mut(render.view, world).unwrap().visual_parent = Some(parent);
+        child.get_mut(c.view, world).unwrap().visual_parent = Some(parent);
         this.invalidate_render(child, world);
-        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(render.focus_scope, world) {
+        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(c.focus_scope, world) {
             parent_focus_scope.is_enabled()
         } else {
             true
         };
         if !parent_is_enabled {
-            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+            let changed = if let Some(focus_scope) = child.get_mut(c.focus_scope, world) {
                 focus_scope.parent_is_enabled = false;
                 focus_scope.is_enabled_core
             } else {
@@ -302,16 +269,18 @@ impl Render {
     ) {
         this.invalidate_render(child, world);
         let render = this.render();
-        let view = child.get_mut(render.view, world).unwrap();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        let view = child.get_mut(c.view, world).unwrap();
         assert_eq!(view.visual_parent, Some(parent));
         view.visual_parent = None;
-        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(render.focus_scope, world) {
+        let parent_is_enabled = if let Some(parent_focus_scope) = parent.get(c.focus_scope, world) {
             parent_focus_scope.is_enabled()
         } else {
             true
         };
         if !parent_is_enabled {
-            let changed = if let Some(focus_scope) = child.get_mut(render.focus_scope, world) {
+            let changed = if let Some(focus_scope) = child.get_mut(c.focus_scope, world) {
                 focus_scope.parent_is_enabled = true;
                 focus_scope.is_enabled_core
             } else {
@@ -330,8 +299,10 @@ impl Render {
         value: Vector,
     ) {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         this.invalidate_render(entity, world);
-        entity.get_mut(render.view, world).unwrap().visual_offset = value;
+        entity.get_mut(c.view, world).unwrap().visual_offset = value;
         this.invalidate_render(entity, world);
     }
 
@@ -342,9 +313,11 @@ impl Render {
         value: Thickness,
     ) {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         this.invalidate_render(entity, world);
-        let real_render_bounds = entity.get(render.view, world).unwrap().real_render_bounds;
-        let view = entity.get_mut(render.view, world).unwrap();
+        let real_render_bounds = entity.get(c.view, world).unwrap().real_render_bounds;
+        let view = entity.get_mut(c.view, world).unwrap();
         view.shadow = value;
         if view.visibility() == Visibility::Collapsed { return; }
         view.real_render_bounds_with_shadow = value.expand_rect(real_render_bounds);
@@ -354,9 +327,11 @@ impl Render {
     pub fn in_tree_impl(this: &Rc<dyn IsRender>, mut entity: Entity<Termx>, world: &World<Termx>) -> bool {
         let render = this.render();
         let root = render.root.get().unwrap();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         loop {
             if entity == root { return true; }
-            let Some(parent) = entity.get(render.view, world).unwrap().visual_parent else { break; };
+            let Some(parent) = entity.get(c.view, world).unwrap().visual_parent else { break; };
             entity = parent;
         }
         false
@@ -368,10 +343,12 @@ impl Render {
         world: &World<Termx>,
     ) -> Option<Entity<Termx>> {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         let mut entity = render.root.get().unwrap();
-        let view = entity.get(render.view, world).unwrap();
+        let view = entity.get(c.view, world).unwrap();
         if view.visibility() != Visibility::Visible { return None; }
-        if !entity.get(render.focus_scope, world).map_or(true, |x| x.is_enabled()) { return None; }
+        if !entity.get(c.focus_scope, world).map_or(true, |x| x.is_enabled()) { return None; }
         let bounds = view.real_render_bounds.offset(view.visual_offset);
         if !bounds.contains(point) { return None; }
         let mut offset = Vector { x: bounds.l(), y: bounds.t() };
@@ -379,9 +356,9 @@ impl Render {
             let children_count = this.visual_children_count(entity, world);
             for i in (0 .. children_count).rev() {
                 let child = this.visual_child(entity, world, i);
-                let view = child.get(render.view, world).unwrap();
+                let view = child.get(c.view, world).unwrap();
                 if view.visibility() != Visibility::Visible { continue; }
-                if !child.get(render.focus_scope, world).map_or(true, |x| x.is_enabled()) { continue; }
+                if !child.get(c.focus_scope, world).map_or(true, |x| x.is_enabled()) { continue; }
                 let bounds = view.real_render_bounds.offset(view.visual_offset).offset(offset);
                 if !bounds.contains(point) { continue; }
                 offset = Vector { x: bounds.l(), y: bounds.t() };
@@ -390,8 +367,8 @@ impl Render {
             }
             break;
         }
-        while !entity.get(render.input_element, world).map_or(false, |x| x.focusable) {
-            let Some(parent) = entity.get(render.view, world).unwrap().visual_parent else { return None; };
+        while !entity.get(c.input_element, world).map_or(false, |x| x.focusable) {
+            let Some(parent) = entity.get(c.view, world).unwrap().visual_parent else { return None; };
             entity = parent;
         }
         Some(entity)
@@ -405,11 +382,13 @@ impl Render {
     ) -> Point {
         let render = this.render();
         let root = render.root.get().unwrap();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         let mut offset = Vector::null();
         let mut in_tree = false;
         loop {
             in_tree = in_tree || entity == root;
-            let view = entity.get(render.view, world).unwrap();
+            let view = entity.get(c.view, world).unwrap();
             let tl = view.real_render_bounds.tl;
             offset += Vector { x: tl.x, y: tl.y };
             offset += view.visual_offset;
@@ -423,14 +402,16 @@ impl Render {
     pub fn invalidate_render_impl(this: &Rc<dyn IsRender>, entity: Entity<Termx>, world: &World<Termx>) {
         let render = this.render();
         let Some(root) = render.root.get() else { return; };
-        let view = entity.get(render.view, world).unwrap();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        let view = entity.get(c.view, world).unwrap();
         let local_rect = view.real_render_bounds_with_shadow;
         let mut global_offset = view.visual_offset;
         let mut cur = view.visual_parent;
         let mut in_tree = entity == root;
         while let Some(parent) = cur {
             in_tree = in_tree || parent == root;
-            let parent_view = parent.get(render.view, world).unwrap();
+            let parent_view = parent.get(c.view, world).unwrap();
             let tl = parent_view.real_render_bounds.tl;
             global_offset += Vector { x: tl.x, y: tl.y };
             global_offset += parent_view.visual_offset;
@@ -450,7 +431,9 @@ impl Render {
     ) {
         if rp.invalidated_rect.intersect(rp.bounds).is_empty() { return; }
         let render = this.render();
-        let view = entity.get(render.view, world).unwrap();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        let view = entity.get(c.view, world).unwrap();
         if view.visibility() != Visibility::Visible { return; }
         let render_bounds = Rect { tl: Point { x: 0, y: 0 }, size: view.real_render_bounds_with_shadow.size };
         this.render_view(entity, world, rp, render_bounds);
@@ -461,7 +444,7 @@ impl Render {
         };
         for i in 0 .. this.visual_children_count(entity, world) {
             let child = this.visual_child(entity, world, i);
-            let child_view = child.get(render.view, world).unwrap();
+            let child_view = child.get(c.view, world).unwrap();
             let visual_offset = child_view.visual_offset;
             let bounds = child_view.real_render_bounds.offset(base_offset).offset(visual_offset);
             let bounds_with_shadow
@@ -479,13 +462,14 @@ impl Render {
     pub fn set_root_impl(this: &Rc<dyn IsRender>, root: Option<Entity<Termx>>, world: &mut World<Termx>) {
         let render = this.render();
         if let Some(root) = root {
-            assert!(root.get(render.view, world).unwrap().visual_parent.is_none());
             let termx = render.termx.upgrade().unwrap();
+            let c = termx.termx().components();
+            assert!(root.get(c.view, world).unwrap().visual_parent.is_none());
             let input = &termx.termx().systems().input;
             if let Some(mut focused) = input.focused() {
                 loop {
                     if focused == root { break; }
-                    focused = focused.get(render.view, world).unwrap().visual_parent.unwrap();
+                    focused = focused.get(c.view, world).unwrap().visual_parent.unwrap();
                 }
             }
         }
@@ -493,6 +477,7 @@ impl Render {
         if let Some(root) = root {
             this.invalidate_render(root, world);
         } else {
+            let render = this.render();
             let termx = render.termx.upgrade().unwrap();
             let input = &termx.termx().systems().input;
             input.focus(None, world);
@@ -505,6 +490,8 @@ impl Render {
         screen: &mut dyn Screen,
     ) -> Option<Point> {
         let render = this.render();
+        let termx = render.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         let root = render.root.get().unwrap();
         let cursor = render.cursor.get();
         let mut invalidated_rect = render.invalidated_rect.replace(
@@ -515,7 +502,7 @@ impl Render {
             render.screen_rect.set(Rect { tl: Point { x: 0, y: 0 }, size: screen_size });
             invalidated_rect = Rect { tl: Point { x: 0, y: 0 }, size: screen_size };
         }
-        let root_view = root.get(render.view, world).unwrap();
+        let root_view = root.get(c.view, world).unwrap();
         let root_bounds = root_view.real_render_bounds;
         let root_bounds_with_shadow = root_view.real_render_bounds_with_shadow;
         let mut rp = RenderPort {

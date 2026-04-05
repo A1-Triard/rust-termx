@@ -154,48 +154,15 @@ impl Termx {
     }
 
     pub fn create_render_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsRender> {
-        let termx = this.termx();
-        let components = termx.components.borrow();
-        Render::new(
-            this,
-            components.as_ref().unwrap().view,
-            components.as_ref().unwrap().decorator,
-            components.as_ref().unwrap().panel,
-            components.as_ref().unwrap().background,
-            components.as_ref().unwrap().t_button,
-            components.as_ref().unwrap().focus_scope,
-            components.as_ref().unwrap().input_element,
-        )
+        Render::new(this)
     }
 
     pub fn create_input_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsInput> {
-        let termx = this.termx();
-        let components = termx.components.borrow();
-        Input::new(
-            this,
-            components.as_ref().unwrap().view,
-            components.as_ref().unwrap().decorator,
-            components.as_ref().unwrap().panel,
-            components.as_ref().unwrap().focus_scope,
-            components.as_ref().unwrap().input_element,
-            components.as_ref().unwrap().t_button,
-        )
+        Input::new(this)
     }
 
     pub fn create_layout_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsLayout> {
-        let termx = this.termx();
-        let components = termx.components.borrow();
-        Layout::new(
-            this,
-            components.as_ref().unwrap().layout_view,
-            components.as_ref().unwrap().view,
-            components.as_ref().unwrap().background,
-            components.as_ref().unwrap().decorator,
-            components.as_ref().unwrap().panel,
-            components.as_ref().unwrap().stack_panel,
-            components.as_ref().unwrap().canvas_layout,
-            components.as_ref().unwrap().t_button,
-        )
+        Layout::new(this)
     }
 
     pub fn drop_entity_impl(this: &Rc<dyn IsTermx>, entity: Entity<Termx>, world: &mut World<Termx>) {

@@ -2,15 +2,9 @@ use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
 use crate::base::{Visibility, Thickness, Vector};
-use crate::components::decorator::Decorator;
-use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::*;
-use crate::components::panel::Panel;
-use crate::components::view::View;
-use crate::components::t_button::TButton;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
-use ooecs::Component;
 use timer_no_std::MonoTime;
 
 pub type TimerDesc = for<'a> fn(
@@ -39,12 +33,6 @@ import! { pub input:
 #[class_unsafe(inherits_Obj)]
 pub struct Input {
     termx: rc::Weak<dyn IsTermx>,
-    pub view: Component<View, Termx>,
-    pub decorator: Component<Decorator, Termx>,
-    pub panel: Component<Panel, Termx>,
-    pub focus_scope: Component<FocusScope, Termx>,
-    pub input_element: Component<InputElement, Termx>,
-    pub t_button: Component<TButton, Termx>,
     focused: Cell<Option<Entity<Termx>>>,
     click: Cell<Option<(Entity<Termx>, Point)>>,
     timers: Cell<Option<(Entity<Termx>, TimerDesc)>>,
@@ -87,19 +75,18 @@ fn t_button_handle_click(
     world: &mut World<Termx>,
     clock: &MonoClock,
 ) {
-    let input = this.input();
     this.timer(
         entity,
         world,
-        clock, 
+        clock,
         |entity, termx, world| {
-            let t_button = termx.termx().components().t_button;
-            &mut entity.get_mut(t_button, world).unwrap().pressed
+            let c = termx.termx().components();
+            &mut entity.get_mut(c.t_button, world).unwrap().pressed
         },
         100,
         |entity, termx, world| {
-            let t_button = termx.termx().components().t_button;
-            if !entity.get(t_button, world).unwrap().is_mouse_pressed {
+            let c = termx.termx().components();
+            if !entity.get(c.t_button, world).unwrap().is_mouse_pressed {
                 let render = &termx.termx().systems().render;
                 render.invalidate_render(entity, world);
                 render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
@@ -107,8 +94,10 @@ fn t_button_handle_click(
             }
         },
     );
-    if !entity.get(input.t_button, world).unwrap().is_mouse_pressed {
-        let termx = input.termx.upgrade().unwrap();
+    let input = this.input();
+    let termx = input.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    if !entity.get(c.t_button, world).unwrap().is_mouse_pressed {
         let render = &termx.termx().systems().render;
         render.invalidate_render(entity, world);
         render.set_shadow(entity, world, Thickness::all(0));
@@ -130,8 +119,9 @@ fn t_button_handle_lmb(
     };
     let input = this.input();
     let termx = input.termx.upgrade().unwrap();
+    let c = termx.termx().components();
     let render = &termx.termx().systems().render;
-    let t_button = entity.get_mut(input.t_button, world).unwrap();
+    let t_button = entity.get_mut(c.t_button, world).unwrap();
     if down {
         t_button.is_mouse_pressed = true;
         if t_button.pressed.is_none() {
@@ -168,46 +158,14 @@ fn t_button_handle_key(
 
 
 impl Input {
-    pub fn new(
-        termx: &Rc<dyn IsTermx>,
-        view: Component<View, Termx>,
-        decorator: Component<Decorator, Termx>,
-        panel: Component<Panel, Termx>,
-        focus_scope: Component<FocusScope, Termx>,
-        input_element: Component<InputElement, Termx>,
-        t_button: Component<TButton, Termx>,
-    ) -> Rc<dyn IsInput> {
-        Rc::new(unsafe { Self::new_raw(
-            termx,
-            view,
-            decorator,
-            panel,
-            focus_scope,
-            input_element,
-            t_button,
-            INPUT_VTABLE.as_ptr(),
-        ) })
+    pub fn new(termx: &Rc<dyn IsTermx>) -> Rc<dyn IsInput> {
+        Rc::new(unsafe { Self::new_raw(termx, INPUT_VTABLE.as_ptr()) })
     }
 
-    pub unsafe fn new_raw(
-        termx: &Rc<dyn IsTermx>,
-        view: Component<View, Termx>,
-        decorator: Component<Decorator, Termx>,
-        panel: Component<Panel, Termx>,
-        focus_scope: Component<FocusScope, Termx>,
-        input_element: Component<InputElement, Termx>,
-        t_button: Component<TButton, Termx>,
-        vtable: Vtable,
-    ) -> Self {
+    pub unsafe fn new_raw(termx: &Rc<dyn IsTermx>, vtable: Vtable) -> Self {
         Input {
             obj: unsafe { Obj::new_raw(vtable) },
             termx: Rc::downgrade(termx),
-            view,
-            decorator,
-            panel,
-            focus_scope,
-            input_element,
-            t_button,
             focused: Cell::new(None),
             click: Cell::new(None),
             timers: Cell::new(None),
@@ -216,11 +174,13 @@ impl Input {
 
     pub fn allow_focus_impl(this: &Rc<dyn IsInput>, entity: Entity<Termx>, world: &World<Termx>) -> bool {
         let input = this.input();
-        let focusable = entity.get(input.input_element, world).map_or(false, |x| x.focusable);
+        let termx = input.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        let focusable = entity.get(c.input_element, world).map_or(false, |x| x.focusable);
         if !focusable { return false; }
-        let is_enabled = entity.get(input.focus_scope, world).map_or(true, |x| x.is_enabled());
+        let is_enabled = entity.get(c.focus_scope, world).map_or(true, |x| x.is_enabled());
         if !is_enabled { return false; }
-        entity.get(input.view, world).unwrap().visibility() == Visibility::Visible
+        entity.get(c.view, world).unwrap().visibility() == Visibility::Visible
     }
 
     pub fn focused_impl(this: &Rc<dyn IsInput>) -> Option<Entity<Termx>> {
@@ -230,14 +190,15 @@ impl Input {
     fn focus_raw(this: &Rc<dyn IsInput>, entity: Option<Entity<Termx>>, world: &mut World<Termx>) {
         let input = this.input();
         let termx = input.termx.upgrade().unwrap();
+        let c = termx.termx().components();
         let render = &termx.termx().systems().render;
         if let Some(prev) = input.focused.get() {
-            prev.get_mut(input.input_element, world).unwrap().is_focused = false;
+            prev.get_mut(c.input_element, world).unwrap().is_focused = false;
             render.invalidate_render(prev, world);
         }
         input.focused.set(entity);
         if let Some(next) = entity {
-            next.get_mut(input.input_element, world).unwrap().is_focused = true;
+            next.get_mut(c.input_element, world).unwrap().is_focused = true;
             render.invalidate_render(next, world);
         }
     }
@@ -257,13 +218,14 @@ impl Input {
         };
         let termx = input.termx.upgrade().unwrap();
         let render = &termx.termx().systems().render;
+        let c = termx.termx().components();
         let mut focus = focused;
         loop {
             let next = if
                    focus != focused // is_enabled & visibility checked already
                 || (
-                       focus.get(input.focus_scope, world).unwrap().is_enabled()
-                    && focus.get(input.view, world).unwrap().visibility() == Visibility::Visible
+                       focus.get(c.focus_scope, world).unwrap().is_enabled()
+                    && focus.get(c.view, world).unwrap().visibility() == Visibility::Visible
                 )
             {
                 let mut next_tab_index = if forward { i16::MAX } else { i16::MIN };
@@ -271,10 +233,10 @@ impl Input {
                 let mut next = None;
                 for i in 0 .. children_count {
                     let child = render.visual_child(focus, world, i);
-                    let Some(focus_scope) = child.get(input.focus_scope, world) else { continue; };
+                    let Some(focus_scope) = child.get(c.focus_scope, world) else { continue; };
                     if
                            !focus_scope.is_enabled()
-                        || child.get(input.view, world).unwrap().visibility() != Visibility::Visible
+                        || child.get(c.view, world).unwrap().visibility() != Visibility::Visible
                     {
                         continue;
                     }
@@ -293,8 +255,8 @@ impl Input {
             if let Some(next) = next {
                 focus = next;
             } else {
-                while let Some(parent) = focus.get(input.view, world).unwrap().visual_parent {
-                    let tab_index = focus.get(input.focus_scope, world).unwrap().tab_index;
+                while let Some(parent) = focus.get(c.view, world).unwrap().visual_parent {
+                    let tab_index = focus.get(c.focus_scope, world).unwrap().tab_index;
                     let mut before_focus = true;
                     let mut next_tab_index = if forward { i16::MAX } else { i16::MIN };
                     let mut next = focus;
@@ -305,10 +267,10 @@ impl Input {
                             before_focus = false;
                             continue;
                         }
-                        let Some(focus_scope) = sibling.get(input.focus_scope, world) else { continue; };
+                        let Some(focus_scope) = sibling.get(c.focus_scope, world) else { continue; };
                         if
                                !focus_scope.is_enabled()
-                            || sibling.get(input.view, world).unwrap().visibility() != Visibility::Visible
+                            || sibling.get(c.view, world).unwrap().visibility() != Visibility::Visible
                         {
                             continue;
                         }
@@ -318,7 +280,7 @@ impl Input {
                             || (forward && !before_focus && focus_scope.tab_index == tab_index)
                             || (!forward && before_focus && focus_scope.tab_index == tab_index)
                         ;
-                        if     candidate 
+                        if     candidate
                             && (
                                    (forward && i16::from(focus_scope.tab_index) < next_tab_index)
                                 || (!forward && i16::from(focus_scope.tab_index) >= next_tab_index)
@@ -337,7 +299,7 @@ impl Input {
                 }
             }
             if focus == focused { break; }
-            let focusable = focus.get(input.input_element, world).map_or(false, |x| x.focusable);
+            let focusable = focus.get(c.input_element, world).map_or(false, |x| x.focusable);
             if focusable {
                 Self::focus_raw(this, Some(focus), world);
                 break;
@@ -377,7 +339,9 @@ impl Input {
         key: Key,
     ) -> bool {
         let input = this.input();
-        match entity.get(input.input_element, world).unwrap().input() {
+        let termx = input.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        match entity.get(c.input_element, world).unwrap().input() {
             INPUT_T_BUTTON => t_button_handle_key(this, entity, world, clock, key),
             _ => false
         }
@@ -392,7 +356,9 @@ impl Input {
         down: Option<bool>,
     ) -> bool {
         let input = this.input();
-        match entity.get(input.input_element, world).unwrap().input() {
+        let termx = input.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        match entity.get(c.input_element, world).unwrap().input() {
             INPUT_T_BUTTON => t_button_handle_lmb(this, entity, world, clock, point, down),
             _ => false
         }
