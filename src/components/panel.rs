@@ -15,7 +15,7 @@ impl Panel {
         Panel { children: Vec::new() }
     }
 
-    property_ro!(Termx, panel, children, ref as &[Entity<Termx>]);
+    property_ro!(Termx, panel, children, ref as [Entity<Termx>]);
 
     pub fn get_children_mut<T>(
         entity: Entity<Termx>,
@@ -23,18 +23,18 @@ impl Panel {
         termx: &Rc<dyn IsTermx>,
         f: impl FnOnce(&mut Vec<Entity<Termx>>) -> T,
     ) -> T {
-        let termx = termx.termx();
-        let component = termx.components().panel;
-        let elements = entity.get(component, world).unwrap().children.clone();
+        let c = termx.termx().components();
+        let s = termx.termx().systems();
+        let elements = entity.get(c.panel, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, world);
+            s.render.remove_visual_child(entity, element, world);
         }
-        let res = f(&mut entity.get_mut(component, world).unwrap().children);
-        let elements = entity.get(component, world).unwrap().children.clone();
+        let res = f(&mut entity.get_mut(c.panel, world).unwrap().children);
+        let elements = entity.get(c.panel, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.add_visual_child(entity, element, world);
+            s.render.add_visual_child(entity, element, world);
         }
-        termx.systems().layout.invalidate_measure(entity, world);
+        s.layout.invalidate_measure(entity, world);
         res
     }
 
@@ -44,17 +44,17 @@ impl Panel {
         termx: &Rc<dyn IsTermx>,
         value: &Vec<Entity<Termx>>,
     ) {
-        let termx = termx.termx();
-        let component = termx.components().panel;
-        let elements = entity.get(component, world).unwrap().children.clone();
+        let c = termx.termx().components();
+        let s = termx.termx().systems();
+        let elements = entity.get(c.panel, world).unwrap().children.clone();
         for element in elements {
-            termx.systems().render.remove_visual_child(entity, element, world);
+            s.render.remove_visual_child(entity, element, world);
         }
-        entity.get_mut(component, world).unwrap().children = value.clone();
+        entity.get_mut(c.panel, world).unwrap().children = value.clone();
         for &element in value {
-            termx.systems().render.add_visual_child(entity, element, world);
+            s.render.add_visual_child(entity, element, world);
         }
-        termx.systems().layout.invalidate_measure(entity, world);
+        s.layout.invalidate_measure(entity, world);
     }
 }
 

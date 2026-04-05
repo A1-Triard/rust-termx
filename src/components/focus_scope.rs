@@ -24,9 +24,8 @@ impl FocusScope {
     }
 
     pub fn get_is_enabled(entity: Entity<Termx>, world: &World<Termx>, termx: &Rc<dyn IsTermx>) -> bool {
-        let termx = termx.termx();
-        let focus_scope = termx.components().focus_scope;
-        entity.get(focus_scope, world).unwrap().is_enabled()
+        let c = termx.termx().components();
+        entity.get(c.focus_scope, world).unwrap().is_enabled()
     }
 
     pub fn set_is_enabled(
@@ -35,13 +34,13 @@ impl FocusScope {
         termx: &Rc<dyn IsTermx>,
         value: bool
     ) {
-        let termx = termx.termx();
-        let focus_scope = termx.components().focus_scope;
-        let component = entity.get_mut(focus_scope, world).unwrap();
-        component.is_enabled_core = value;
-        let parent_is_enabled = component.parent_is_enabled;
+        let c = termx.termx().components();
+        let focus_scope = entity.get_mut(c.focus_scope, world).unwrap();
+        focus_scope.is_enabled_core = value;
+        let parent_is_enabled = focus_scope.parent_is_enabled;
         if parent_is_enabled {
-            termx.systems().render.is_enabled_changed(entity, world, value);
+            let s = termx.termx().systems();
+            s.render.is_enabled_changed(entity, world, value);
         }
     }
 

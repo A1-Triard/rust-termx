@@ -50,27 +50,24 @@ macro_rules! property_ro {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref as $get:ty) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
         }
     };
@@ -85,9 +82,8 @@ macro_rules! property_rw {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -96,23 +92,20 @@ macro_rules! property_rw {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty) => {
         $crate::paste_paste! {
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -121,9 +114,8 @@ macro_rules! property_rw {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&mut entity.get_mut(component, world).unwrap().$name)
+                let c = termx. [< $Termx:snake >] ().components();
+                f(&mut entity.get_mut(c.$component, world).unwrap().$name)
             }
 
             pub fn [< set_ $name >] (
@@ -132,9 +124,8 @@ macro_rules! property_rw {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
             }
         }
     };
@@ -153,9 +144,8 @@ macro_rules! property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -164,12 +154,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
@@ -185,9 +174,8 @@ macro_rules! property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -196,12 +184,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
@@ -217,9 +204,8 @@ macro_rules! property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -228,12 +214,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
             }
         }
@@ -249,9 +234,8 @@ macro_rules! property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -260,15 +244,14 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
@@ -284,9 +267,8 @@ macro_rules! property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -295,34 +277,31 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -331,12 +310,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
+                let c = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
                 res
             }
@@ -347,31 +325,28 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -380,12 +355,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
+                let c = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
                 res
             }
@@ -396,31 +370,28 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -429,12 +400,11 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
+                let c = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 res
             }
@@ -445,31 +415,28 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -478,15 +445,14 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
+                let c = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
                 res
             }
@@ -497,34 +463,31 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_measure(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @render+arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -533,15 +496,14 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
+                let c = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(c.$component, world).unwrap().$name);
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
                 res
             }
@@ -552,15 +514,14 @@ macro_rules! property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(c.$component, world).unwrap().$name = value;
+                let s = termx.termx().systems();
                 $crate::systems::render::RenderExt::invalidate_render(
-                    &termx.systems().render, entity, world
+                    &s.render, entity, world
                 );
                 $crate::systems::layout::LayoutExt::invalidate_arrange(
-                    &termx.systems().layout, entity, world
+                    &s.layout, entity, world
                 );
             }
         }
@@ -580,9 +541,8 @@ macro_rules! layout_property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -591,16 +551,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(xc.$component, world).unwrap().$name = value;
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = onwer {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_measure(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }
@@ -618,9 +578,8 @@ macro_rules! layout_property {
                 world: &$crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
             ) -> $get_set {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                entity.get(component, world).unwrap().$name
+                let c = termx. [< $Termx:snake >] ().components();
+                entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< set_ $name >] (
@@ -629,16 +588,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $get_set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(xc.$component, world).unwrap().$name = value;
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = owner {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_arrange(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }
@@ -647,19 +606,17 @@ macro_rules! layout_property {
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @measure) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -668,16 +625,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(xc.$component, world).unwrap().$name);
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = owner {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_measure(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }
@@ -690,16 +647,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(xc.$component, world).unwrap().$name = value;
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = owner {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_measure(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }
@@ -708,19 +665,17 @@ macro_rules! layout_property {
     };
     ($Termx:ident, $component:ident, $name:ident, ref $set:ty as $get:ty, @arrange) => {
         $crate::paste_paste! {
-            pub fn $name(&self) -> $get {
+            pub fn $name(&self) -> &$get {
                 &self.$name
             }
 
-            pub fn [< get_ $name >] <T> (
+            pub fn [< get_ $name >] <'a> (
                 entity: $crate::ooecs_Entity<$crate::termx::Termx>,
-                world: &$crate::ooecs_World<$crate::termx::Termx>,
+                world: &'a $crate::ooecs_World<$crate::termx::Termx>,
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
-                f: impl FnOnce($get) -> T
-            ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let component = xtermx.components().$component;
-                f(&entity.get(component, world).unwrap().$name)
+            ) -> &'a $get {
+                let c = termx. [< $Termx:snake >] ().components();
+                &entity.get(c.$component, world).unwrap().$name
             }
 
             pub fn [< get_ $name _mut >] <T> (
@@ -729,16 +684,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 f: impl FnOnce(&mut $set) -> T
             ) -> T {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                let res = f(&mut entity.get_mut(component, world).unwrap().$name);
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                let res = f(&mut entity.get_mut(xc.$component, world).unwrap().$name);
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = owner {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_arrange(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }
@@ -751,16 +706,16 @@ macro_rules! layout_property {
                 termx: &$crate::alloc_rc_Rc<dyn [< Is $Termx >] >,
                 value: $set
             ) {
-                let xtermx = termx. [< $Termx:snake >] ();
-                let termx = termx.termx();
-                let component = xtermx.components().$component;
-                entity.get_mut(component, world).unwrap().$name = value;
-                let owner = entity.get(termx.components().view_layout, world).unwrap().owner();
+                let xc = termx. [< $Termx:snake >] ().components();
+                entity.get_mut(xc.$component, world).unwrap().$name = value;
+                let c = termx.termx().components();
+                let owner = entity.get(c.view_layout, world).unwrap().owner();
                 if let Some(owner) = owner {
-                    let owner_parent = owner.get(termx.components().view, world).unwrap().visual_parent();
+                    let owner_parent = owner.get(c.view, world).unwrap().visual_parent();
                     if let Some(owner_parent) = owner_parent {
+                        let s = termx.termx().systems();
                         $crate::systems::layout::LayoutExt::invalidate_arrange(
-                            &termx.systems().layout, owner_parent, world
+                            &s.layout, owner_parent, world
                         );
                     }
                 }

@@ -59,7 +59,7 @@ impl View {
         self.render
     }
 
-    property_rw!(Termx, view, name, ref String as &str);
+    property_rw!(Termx, view, name, ref String as str);
     property_ro!(Termx, view, layout, Option<Entity<Termx>>);
 
     pub fn set_layout(
@@ -68,21 +68,20 @@ impl View {
         termx: &Rc<dyn IsTermx>,
         value: Option<Entity<Termx>>
     ) {
-        let termx = termx.termx();
-        let component = termx.components().view;
-        let view_layout = termx.components().view_layout;
-        let old_layout = entity.get(component, world).unwrap().layout;
+        let c = termx.termx().components();
+        let old_layout = entity.get(c.view, world).unwrap().layout;
         if let Some(old_layout) = old_layout {
-            old_layout.get_mut(view_layout, world).unwrap().owner = None;
+            old_layout.get_mut(c.view_layout, world).unwrap().owner = None;
         }
-        let view = entity.get_mut(component, world).unwrap();
+        let view = entity.get_mut(c.view, world).unwrap();
         view.layout = value;
         let parent = view.visual_parent;
         if let Some(new_layout) = value {
-            new_layout.get_mut(view_layout, world).unwrap().owner = Some(entity);
+            new_layout.get_mut(c.view_layout, world).unwrap().owner = Some(entity);
         }
         if let Some(parent) = parent {
-            termx.systems().layout.invalidate_measure(parent, world);
+            let s = termx.termx().systems();
+            s.layout.invalidate_measure(parent, world);
         }
     }
 
@@ -94,9 +93,8 @@ impl View {
         termx: &Rc<dyn IsTermx>,
         value: Visibility
     ) {
-        let termx = termx.termx();
-        let component = termx.components().view;
-        let view = entity.get_mut(component, world).unwrap();
+        let c = termx.termx().components();
+        let view = entity.get_mut(c.view, world).unwrap();
         let old_visibility = replace(&mut view.visibility, value);
         let (invalidate_measure, invalidate_render) = match (old_visibility, value) {
             (Visibility::Visible, Visibility::Collapsed) => (true, false),
@@ -107,11 +105,12 @@ impl View {
             (Visibility::Collapsed, Visibility::Hidden) => (true, false),
             _ => (false, false),
         };
+        let s = termx.termx().systems();
         if invalidate_measure {
-            termx.systems().layout.invalidate_measure(entity, world);
+            s.layout.invalidate_measure(entity, world);
         }
         if invalidate_render {
-            termx.systems().render.invalidate_render(entity, world);
+            s.render.invalidate_render(entity, world);
         }
     }
 }

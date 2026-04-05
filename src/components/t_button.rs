@@ -63,7 +63,7 @@ impl TButton {
         b
     }
 
-    property!(Termx, t_button, text, ref String as &str, @measure);
+    property!(Termx, t_button, text, ref String as str, @measure);
     property!(Termx, t_button, color, (Fg, Bg), @render);
     property!(Termx, t_button, color_hotkey, (Fg, Bg), @render);
     property!(Termx, t_button, color_focused, (Fg, Bg), @render);

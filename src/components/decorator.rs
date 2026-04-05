@@ -22,17 +22,17 @@ impl Decorator {
         termx: &Rc<dyn IsTermx>,
         value: Option<Entity<Termx>>,
     ) {
-        let termx = termx.termx();
-        let component = termx.components().decorator;
-        let old_child = entity.get(component, world).unwrap().child;
+        let c = termx.termx().components();
+        let s = termx.termx().systems();
+        let old_child = entity.get(c.decorator, world).unwrap().child;
         if let Some(child) = old_child {
-            termx.systems().render.remove_visual_child(entity, child, world);
+            s.render.remove_visual_child(entity, child, world);
         }
-        entity.get_mut(component, world).unwrap().child = value;
+        entity.get_mut(c.decorator, world).unwrap().child = value;
         if let Some(child) = value {
-            termx.systems().render.add_visual_child(entity, child, world);
+            s.render.add_visual_child(entity, child, world);
         }
-        termx.systems().layout.invalidate_measure(entity, world);
+        s.layout.invalidate_measure(entity, world);
     }
 }
 

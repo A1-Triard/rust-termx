@@ -37,7 +37,7 @@ impl StaticText {
         e
     }
 
-    property!(Termx, static_text, text, ref String as &str, @render+measure);
+    property!(Termx, static_text, text, ref String as str, @render+measure);
     property!(Termx, static_text, text_align, TextAlign, @render);
     property!(Termx, static_text, text_wrapping, TextWrapping, @render+measure);
     property!(Termx, static_text, color, (Fg, Bg), @render);
