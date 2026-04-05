@@ -184,6 +184,10 @@ impl Render {
                 let panel = entity.get(c.panel, world).unwrap();
                 panel.children().len()
             },
+            TREE_CONTENT_PRESENTER => {
+                let content_presenter = entity.get(c.content_presenter, world).unwrap();
+                if content_presenter.actual_child.is_some() { 1 } else { 0 }
+            },
             _ => 0,
         }
     }
@@ -200,13 +204,18 @@ impl Render {
         let c = termx.components();
         match entity.get(c.view, world).unwrap().tree() {
             TREE_DECORATOR => {
-                let decorator = entity.get(c.decorator, world).unwrap();
                 assert_eq!(index, 0);
+                let decorator = entity.get(c.decorator, world).unwrap();
                 decorator.child().unwrap()
             },
             TREE_PANEL => {
                 let panel = entity.get(c.panel, world).unwrap();
                 panel.children()[index]
+            },
+            TREE_CONTENT_PRESENTER => {
+                assert_eq!(index, 0);
+                let content_presenter = entity.get(c.content_presenter, world).unwrap();
+                content_presenter.actual_child.unwrap()
             },
             _ => panic!(),
         }

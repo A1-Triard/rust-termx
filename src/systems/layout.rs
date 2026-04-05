@@ -182,6 +182,43 @@ fn arrange_canvas(
     inner_bounds.size
 }
 
+fn measure_content_presenter(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.content_presenter, world).unwrap().actual_child;
+    if let Some(child) = child {
+        this.measure(child, world, w, h);
+        child.get(c.layout_view, world).unwrap().desired_size
+    } else {
+        Vector::null()
+    }
+}
+
+fn arrange_content_presenter(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.content_presenter, world).unwrap().actual_child;
+    if let Some(child) = child {
+        this.arrange(child, world, inner_bounds);
+        child.get(c.layout_view, world).unwrap().render_bounds.size
+    } else {
+        Vector::null()
+    }
+}
+
 fn measure_static_text(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
@@ -273,6 +310,7 @@ impl Layout {
             LAYOUT_CANVAS => measure_canvas(this, entity, world, w, h),
             LAYOUT_T_BUTTON => measure_t_button(this, entity, world, w, h),
             LAYOUT_STATIC_TEXT => measure_static_text(this, entity, world, w, h),
+            LAYOUT_CONTENT_PRESENTER => measure_content_presenter(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -292,6 +330,7 @@ impl Layout {
             LAYOUT_CANVAS => arrange_canvas(this, entity, world, inner_bounds),
             LAYOUT_T_BUTTON => arrange_t_button(this, entity, world, inner_bounds),
             LAYOUT_STATIC_TEXT => arrange_static_text(this, entity, world, inner_bounds),
+            LAYOUT_CONTENT_PRESENTER => arrange_content_presenter(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }
