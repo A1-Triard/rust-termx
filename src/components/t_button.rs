@@ -7,9 +7,8 @@ use crate::components::layout_view::*;
 use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::*;
 use crate::event_handler::EventHandler;
-use crate::systems::render::RenderExt;
-use int_vec_2d::Thickness;
 use crate::property;
+use crate::systems::init::InitExt;
 use crate::systems::input::Timer;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
@@ -42,24 +41,15 @@ impl TButton {
         }
     }
 
-    pub fn init(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
-        termx.termx().systems().render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
-    }
-
     pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        let termx_ = termx.termx();
-        let view = termx_.components().view;
-        let layout_view = termx_.components().layout_view;
-        let focus_scope = termx_.components().focus_scope;
-        let input_element = termx_.components().input_element;
-        let t_button = termx_.components().t_button;
-        let b = Entity::new(t_button, world);
-        b.add(view, world, View::new(TREE_NONE, RENDER_T_BUTTON));
-        b.add(layout_view, world, LayoutView::new(LAYOUT_T_BUTTON));
-        b.add(focus_scope, world, FocusScope::new());
-        b.add(input_element, world, InputElement::new(INPUT_T_BUTTON));
-        b.add(t_button, world, TButton::new());
-        Self::init(b, world, termx);
+        let c = termx.termx().components();
+        let b = Entity::new(c.t_button, world);
+        b.add(c.view, world, View::new(TREE_NONE, RENDER_T_BUTTON));
+        b.add(c.layout_view, world, LayoutView::new(LAYOUT_T_BUTTON));
+        b.add(c.focus_scope, world, FocusScope::new());
+        b.add(c.input_element, world, InputElement::new(INPUT_T_BUTTON));
+        b.add(c.t_button, world, TButton::new());
+        termx.termx().systems().init.init_t_button(b, world);
         b
     }
 

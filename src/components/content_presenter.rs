@@ -1,7 +1,9 @@
 use alloc::rc::Rc;
 use alloc::string::String;
+use crate::property_ro;
 use crate::base::{Fg, Bg, TextWrapping};
 use crate::components::layout_view::*;
+use crate::components::focus_scope::FocusScope;
 use crate::components::static_text::StaticText;
 use crate::components::view::*;
 use crate::systems::layout::LayoutExt;
@@ -15,7 +17,6 @@ pub struct ContentPresenter {
     text: Rc<String>,
     text_color: (Fg, Bg),
     text_wrapping: TextWrapping,
-    text_entity: Option<Entity<Termx>>,
     pub(crate) actual_child: Option<Entity<Termx>>,
 }
 
@@ -50,11 +51,11 @@ impl ContentPresenter {
         value: Option<Entity<Termx>>,
     ) {
         let c = termx.termx().components();
-        entity.get_mut(component, world).unwrap().content = value;
+        entity.get_mut(c.content_presenter, world).unwrap().content = value;
         Self::update_actual_child(entity, world, termx);
     }
 
-    property_ro!(Termx, content_presenter, text, ref as Rc<String>);
+    property_ro!(Termx, content_presenter, text, ref Rc<String>);
 
     pub fn get_text_mut<T>(
         entity: Entity<Termx>,
@@ -65,14 +66,14 @@ impl ContentPresenter {
         let c = termx.termx().components();
         let content_presenter = entity.get_mut(c.content_presenter, world).unwrap();
         let res = f(&mut content_presenter.text);
-        if content_presenter.content.is_some() { return; }
+        if content_presenter.content.is_some() { return res; }
         if
                let Some(actual_child) = content_presenter.actual_child
             && !content_presenter.text.is_empty()
         {
             let text = content_presenter.text.clone();
             StaticText::set_text(actual_child, world, termx, text);
-            return;
+            return res;
         }
         Self::update_actual_child(entity, world, termx);
         res
@@ -101,7 +102,7 @@ impl ContentPresenter {
 
     property_ro!(Termx, content_presenter, text_color, (Fg, Bg));
 
-    pub fn set_color(
+    pub fn set_text_color(
         entity: Entity<Termx>,
         world: &mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
@@ -143,14 +144,14 @@ impl ContentPresenter {
         if let Some(old_child) = entity.get(c.content_presenter, world).unwrap().actual_child {
             s.render.remove_visual_child(entity, old_child, world);
         }
-        let content_presenter = entity.get_mut(c.content_presenter, world).unwrap();
+        let content_presenter = entity.get(c.content_presenter, world).unwrap();
         let new_child = if let Some(content) = content_presenter.content {
             Some(content)
         } else if !content_presenter.text.is_empty() {
             let text = content_presenter.text.clone();
             let text_color = content_presenter.text_color;
             let text_wrapping = content_presenter.text_wrapping;
-            let child = StaticText::new(world, termx);
+            let child = StaticText::new_entity(world, termx);
             StaticText::set_text(child, world, termx, text);
             StaticText::set_color(child, world, termx, text_color);
             StaticText::set_text_wrapping(child, world, termx, text_wrapping);
@@ -158,7 +159,7 @@ impl ContentPresenter {
         } else {
             None
         };
-        content_presenter.actual_child = new_child;
+        entity.get_mut(c.content_presenter, world).unwrap().actual_child = new_child;
         if let Some(new_child) = new_child {
             s.render.add_visual_child(entity, new_child, world);
         }

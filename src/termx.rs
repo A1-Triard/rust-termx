@@ -18,6 +18,7 @@ use crate::components::static_text::StaticText;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
+use crate::systems::init::{IsInit, Init};
 use ooecs::Component;
 
 import! { pub termx:
@@ -50,6 +51,7 @@ pub struct TermxSystems {
     pub render: Rc<dyn IsRender>,
     pub layout: Rc<dyn IsLayout>,
     pub input: Rc<dyn IsInput>,
+    pub init: Rc<dyn IsInit>,
 }
 
 pub struct Ref<'a, T>(cell::Ref<'a, Option<T>>);
@@ -78,6 +80,8 @@ pub struct Termx {
     create_layout: fn() -> Rc<dyn IsLayout>,
     #[virt]
     create_input: fn() -> Rc<dyn IsInput>,
+    #[virt]
+    create_init: fn() -> Rc<dyn IsInit>,
     #[non_virt]
     run: fn(
         root: Entity<Termx>,
@@ -155,11 +159,13 @@ impl Termx {
         let render = this.create_render();
         let layout = this.create_layout();
         let input = this.create_input();
+        let init = this.create_init();
         let termx = this.termx();
         termx.systems.replace(Some(TermxSystems {
             render,
             layout,
             input,
+            init,
         }));
     }
 
@@ -173,6 +179,10 @@ impl Termx {
 
     pub fn create_layout_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsLayout> {
         Layout::new(this)
+    }
+
+    pub fn create_init_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsInit> {
+        Init::new(this)
     }
 
     pub fn drop_entity_impl(this: &Rc<dyn IsTermx>, entity: Entity<Termx>, world: &mut World<Termx>) {
