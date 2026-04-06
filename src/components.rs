@@ -12,3 +12,5 @@ pub mod focus_scope;
 pub mod input_element;
 pub mod static_text;
 pub mod content_presenter;
+pub mod border;
+pub mod adorners_panel;

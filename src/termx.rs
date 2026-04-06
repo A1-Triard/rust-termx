@@ -15,6 +15,8 @@ use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::InputElement;
 use crate::components::content_presenter::ContentPresenter;
 use crate::components::static_text::StaticText;
+use crate::components::border::Border;
+use crate::components::adorners_panel::AdornersPanel;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
@@ -45,6 +47,8 @@ pub struct TermxComponents {
     pub input_element: Component<InputElement, Termx>,
     pub static_text: Component<StaticText, Termx>,
     pub content_presenter: Component<ContentPresenter, Termx>,
+    pub border: Component<Border, Termx>,
+    pub adorners_panel: Component<AdornersPanel, Termx>,
 }
 
 pub struct TermxSystems {
@@ -137,6 +141,8 @@ impl Termx {
         let t_button: Component<TButton, Termx> = Component::new(input_element, world);
         let static_text: Component<StaticText, Termx> = Component::new(layout_view, world);
         let content_presenter: Component<ContentPresenter, Termx> = Component::new(focus_scope, world);
+        let border: Component<Border, Termx> = Component::new(decorator, world);
+        let adorners_panel: Component<AdornersPanel, Termx> = Component::new(panel, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -152,6 +158,8 @@ impl Termx {
             input_element,
             static_text,
             content_presenter,
+            border,
+            adorners_panel,
         }));
     }
 

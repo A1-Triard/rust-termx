@@ -11,8 +11,9 @@ use ooecs::{Entity, World};
 use termx_screen_base::{Bg, Fg};
 
 pub struct Background {
-    pub(crate) pattern: Rc<String>,
-    pub(crate) color: (Fg, Bg),
+    pattern: Rc<String>,
+    color: (Fg, Bg),
+    fit_to_content: bool,
 }
 
 impl Background {
@@ -20,27 +21,24 @@ impl Background {
         Background {
             pattern: Rc::new("░".to_string()),
             color: (Fg::LightGray, Bg::Black),
+            fit_to_content: false,
         }
     }
 
     pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
-        let termx = termx.termx();
-        let view = termx.components().view;
-        let layout_view = termx.components().layout_view;
-        let focus_scope = termx.components().focus_scope;
-        let decorator = termx.components().decorator;
-        let background = termx.components().background;
-        let bg = Entity::new(background, world);
-        bg.add(view, world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
-        bg.add(layout_view, world, LayoutView::new(LAYOUT_BACKGROUND));
-        bg.add(focus_scope, world, FocusScope::new());
-        bg.add(decorator, world, Decorator::new());
-        bg.add(background, world, Background::new());
+        let c = termx.termx().components();
+        let bg = Entity::new(c.background, world);
+        bg.add(c.view, world, View::new(TREE_DECORATOR, RENDER_BACKGROUND));
+        bg.add(c.layout_view, world, LayoutView::new(LAYOUT_BACKGROUND));
+        bg.add(c.focus_scope, world, FocusScope::new());
+        bg.add(c.decorator, world, Decorator::new());
+        bg.add(c.background, world, Background::new());
         bg
     }
 
     property!(Termx, background, pattern, ref Rc<String>, @render);
     property!(Termx, background, color, (Fg, Bg), @render);
+    property!(Termx, background, fit_to_content, bool, @arrange);
 }
 
 #[macro_export]
@@ -70,6 +68,9 @@ macro_rules! background_template {
                 #[serde(serialize_with="components_background_serialize_color")]
                 #[serde(deserialize_with="components_background_deserialize_color")]
                 pub color: Option<($crate::base::Fg, $crate::base::Bg)>,
+                #[serde(default)]
+                #[serde(skip_serializing_if="Option::is_none")]
+                pub fit_to_content: Option<bool>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -92,6 +93,9 @@ macro_rules! background_apply_template {
             )
         );
         $this.color.map(|x| $crate::components::background::Background::set_color($entity, $world, $termx, x));
+        $this.fit_to_content.map(|x|
+            $crate::components::background::Background::set_fit_to_content($entity, $world, $termx, x)
+        );
     };
 }
 

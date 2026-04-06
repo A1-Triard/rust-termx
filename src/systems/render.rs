@@ -93,7 +93,7 @@ fn render_background(
     let termx = render.termx.upgrade().unwrap();
     let c = termx.termx().components();
     let background = entity.get(c.background, world).unwrap();
-    rp.fill(|rp, p| rp.text(p, background.color, &background.pattern));
+    rp.fill(|rp, p| rp.text(p, background.color(), background.pattern().as_str()));
 }
 
 fn render_t_button(
@@ -148,6 +148,28 @@ fn render_t_button(
         rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
         rp.half_shadow(inner_bounds.tr_inner(), "▄");
     }
+}
+
+fn render_border(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
+) {
+    let render = this.render();
+    let termx = render.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let border = entity.get(c.border, world).unwrap();
+    rp.fill_bg(border.color());
+    rp.h_line(inner_bounds.tl, inner_bounds.w(), border.double(), border.color());
+    rp.h_line(inner_bounds.bl_inner(), inner_bounds.w(), border.double(), border.color());
+    rp.v_line(inner_bounds.tl, inner_bounds.h(), border.double(), border.color());
+    rp.v_line(inner_bounds.tr_inner(), inner_bounds.h(), border.double(), border.color());
+    rp.tl_edge(inner_bounds.tl, border.double(), border.color());
+    rp.tr_edge(inner_bounds.tr_inner(), border.double(), border.color());
+    rp.br_edge(inner_bounds.br_inner(), border.double(), border.color());
+    rp.bl_edge(inner_bounds.bl_inner(), border.double(), border.color());
 }
 
 impl Render {
@@ -235,6 +257,7 @@ impl Render {
             RENDER_BACKGROUND => render_background(this, entity, world, rp, inner_bounds),
             RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
             RENDER_STATIC_TEXT => render_static_text(this, entity, world, rp, inner_bounds),
+            RENDER_BORDER => render_border(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

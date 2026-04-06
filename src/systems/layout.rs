@@ -7,6 +7,7 @@ use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
 use crate::text_renderer::render_text;
 use int_vec_2d::{HAlign, VAlign, Thickness, Point};
+use iter_identify_first_last::IteratorIdentifyFirstLastExt;
 
 import! { pub layout:
     use [obj basic_oop::obj];
@@ -70,9 +71,17 @@ fn arrange_background(
     let child = entity.get(c.decorator, world).unwrap().child();
     if let Some(child) = child {
         this.arrange(child, world, inner_bounds);
-        child.get(c.layout_view, world).unwrap().render_bounds.size
+        if entity.get(c.background, world).unwrap().fit_to_content() {
+            child.get(c.layout_view, world).unwrap().render_bounds.size
+        } else {
+            inner_bounds.size
+        }
     } else {
-        inner_bounds.size
+        if entity.get(c.background, world).unwrap().fit_to_content() {
+            Vector::null()
+        } else {
+            inner_bounds.size
+        }
     }
 }
 
@@ -282,6 +291,90 @@ fn arrange_t_button(
     inner_bounds.size
 }
 
+fn measure_border(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.decorator, world).unwrap().child();
+    if let Some(child) = child {
+        let child_w = w.map(|x| Thickness::all(1).shrink_rect_size(Vector { x, y: 0 }).x);
+        let child_h = h.map(|y| Thickness::all(1).shrink_rect_size(Vector { x: 0, y }).y);
+        this.measure(child, world, child_w, child_h);
+        let desired = child.get(c.layout_view, world).unwrap().desired_size;
+        Thickness::all(1).expand_rect_size(desired)
+    } else {
+        Thickness::all(1).expand_rect_size(Vector::null())
+    }
+}
+
+fn arrange_border(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.decorator, world).unwrap().child();
+    if let Some(child) = child {
+        let child_bounds = Thickness::all(1).shrink_rect(inner_bounds);
+        this.arrange(child, world, child_bounds);
+    }
+    inner_bounds.size
+}
+
+fn measure_adorners_panel(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let children = entity.get(c.panel, world).unwrap().children().to_vec();
+    let mut size = Vector::null();
+    for (is_first, child) in children.into_iter().identify_first() {
+        if is_first {
+            this.measure(child, world, w, h);
+            size = child.get(c.layout_view, world).unwrap().desired_size;
+        } else {
+            this.measure(child, world, Some(size.x), Some(size.y));
+        }
+    }
+    size
+}
+
+fn arrange_adorners_panel(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let children = entity.get(c.panel, world).unwrap().children().to_vec();
+    let mut child_bounds = inner_bounds;
+    for (is_first, child) in children.into_iter().identify_first() {
+        if is_first {
+            this.arrange(child, world, inner_bounds);
+            child_bounds = child.get(c.layout_view, world).unwrap().render_bounds;
+        } else {
+            this.arrange(child, world, child_bounds);
+        }
+    }
+    child_bounds.size
+}
+
 impl Layout {
     pub fn new(termx: &Rc<dyn IsTermx>) -> Rc<dyn IsLayout> {
         Rc::new(unsafe { Self::new_raw(termx, LAYOUT_VTABLE.as_ptr()) })
@@ -311,6 +404,8 @@ impl Layout {
             LAYOUT_T_BUTTON => measure_t_button(this, entity, world, w, h),
             LAYOUT_STATIC_TEXT => measure_static_text(this, entity, world, w, h),
             LAYOUT_CONTENT_PRESENTER => measure_content_presenter(this, entity, world, w, h),
+            LAYOUT_BORDER => measure_border(this, entity, world, w, h),
+            LAYOUT_ADORNERS_PANEL => measure_adorners_panel(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -331,6 +426,8 @@ impl Layout {
             LAYOUT_T_BUTTON => arrange_t_button(this, entity, world, inner_bounds),
             LAYOUT_STATIC_TEXT => arrange_static_text(this, entity, world, inner_bounds),
             LAYOUT_CONTENT_PRESENTER => arrange_content_presenter(this, entity, world, inner_bounds),
+            LAYOUT_BORDER => arrange_border(this, entity, world, inner_bounds),
+            LAYOUT_ADORNERS_PANEL => arrange_adorners_panel(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }
