@@ -210,6 +210,10 @@ impl Render {
                 let content_presenter = entity.get(c.content_presenter, world).unwrap();
                 if content_presenter.actual_child.is_some() { 1 } else { 0 }
             },
+            TREE_CONTROL => {
+                let control = entity.get(c.control, world).unwrap();
+                if control.visual_tree.is_some() { 1 } else { 0 }
+            },
             _ => 0,
         }
     }
@@ -238,6 +242,11 @@ impl Render {
                 assert_eq!(index, 0);
                 let content_presenter = entity.get(c.content_presenter, world).unwrap();
                 content_presenter.actual_child.unwrap()
+            },
+            TREE_CONTROL => {
+                assert_eq!(index, 0);
+                let control = entity.get(c.control, world).unwrap();
+                control.visual_tree.unwrap()
             },
             _ => panic!(),
         }

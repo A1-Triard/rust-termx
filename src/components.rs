@@ -14,3 +14,4 @@ pub mod static_text;
 pub mod content_presenter;
 pub mod border;
 pub mod adorners_panel;
+pub mod control;

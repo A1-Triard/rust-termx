@@ -228,6 +228,43 @@ fn arrange_content_presenter(
     }
 }
 
+fn measure_control(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    w: Option<i16>,
+    h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.control, world).unwrap().visual_tree;
+    if let Some(child) = child {
+        this.measure(child, world, w, h);
+        child.get(c.layout_view, world).unwrap().desired_size
+    } else {
+        Vector::null()
+    }
+}
+
+fn arrange_control(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let child = entity.get(c.control, world).unwrap().visual_tree;
+    if let Some(child) = child {
+        this.arrange(child, world, inner_bounds);
+        child.get(c.layout_view, world).unwrap().render_bounds.size
+    } else {
+        Vector::null()
+    }
+}
+
 fn measure_static_text(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
@@ -406,6 +443,7 @@ impl Layout {
             LAYOUT_CONTENT_PRESENTER => measure_content_presenter(this, entity, world, w, h),
             LAYOUT_BORDER => measure_border(this, entity, world, w, h),
             LAYOUT_ADORNERS_PANEL => measure_adorners_panel(this, entity, world, w, h),
+            LAYOUT_CONTROL => measure_control(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -428,6 +466,7 @@ impl Layout {
             LAYOUT_CONTENT_PRESENTER => arrange_content_presenter(this, entity, world, inner_bounds),
             LAYOUT_BORDER => arrange_border(this, entity, world, inner_bounds),
             LAYOUT_ADORNERS_PANEL => arrange_adorners_panel(this, entity, world, inner_bounds),
+            LAYOUT_CONTROL => arrange_control(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }
