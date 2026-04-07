@@ -16,5 +16,10 @@
       </StaticText.Layout>
       Это просто текст
     </StaticText>
+    <GroupBox Width="10" Height="5">
+      <GroupBox.Layout>
+        <CanvasLayout Tl="20,6" />
+      </GroupBox.Layout>
+    </GroupBox>
   </Canvas>
 </Border>

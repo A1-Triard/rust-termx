@@ -8,6 +8,7 @@ use crate::components::content_presenter::ContentPresenter;
 use crate::components::decorator::Decorator;
 use crate::components::focus_scope::FocusScope;
 use crate::components::layout_view::LayoutView;
+use crate::components::input_element::InputElement;
 use crate::components::panel::Panel;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
@@ -118,5 +119,6 @@ impl Init {
         let s = termx.termx().systems();
         s.render.add_visual_child(entity, visual_tree, world);
         s.layout.invalidate_measure(entity, world);
+        InputElement::set_focusable(entity, world, &termx, false);
     }
 }
