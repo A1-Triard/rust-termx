@@ -34,6 +34,7 @@ pub const LAYOUT_CONTENT_PRESENTER: u16 = 6;
 pub const LAYOUT_BORDER: u16 = 7;
 pub const LAYOUT_ADORNERS_PANEL: u16 = 8;
 pub const LAYOUT_CONTROL: u16 = 9;
+pub const LAYOUT_BUTTON: u16 = 10;
 
 impl LayoutView {
     pub fn new(layout: u16) -> Self {

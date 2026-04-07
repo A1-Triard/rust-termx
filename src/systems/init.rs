@@ -1,7 +1,7 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use crate::alloc::string::ToString;
-use crate::base::{ViewVAlign, TextWrapping};
+use crate::base::{ViewVAlign, TextWrapping, Fg, Bg};
 use crate::components::adorners_panel::AdornersPanel;
 use crate::components::background::Background;
 use crate::components::border::Border;
@@ -11,6 +11,8 @@ use crate::components::focus_scope::FocusScope;
 use crate::components::layout_view::LayoutView;
 use crate::components::input_element::InputElement;
 use crate::components::panel::Panel;
+use crate::components::view::*;
+use crate::components::button::Button;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::termx::IsTermx;
@@ -48,8 +50,16 @@ impl Init {
     pub fn init_t_button_impl(this: &Rc<dyn IsInit>, entity: Entity<Termx>, world: &mut World<Termx>) {
         let init = this.init();
         let termx = init.termx.upgrade().unwrap();
-        let s = termx.termx().systems();
-        s.render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
+        let c = termx.termx().components();
+        Button::set_color(entity, world, &termx, (Fg::Black, Bg::Green));
+        Button::set_color_hotkey(entity, world, &termx, (Fg::Yellow, Bg::Green));
+        Button::set_color_focused(entity, world, &termx, (Fg::White, Bg::Green));
+        Button::set_color_focused_hotkey(entity, world, &termx, (Fg::Yellow, Bg::Green));
+        Button::set_color_disabled(entity, world, &termx, (Fg::DarkGray, Bg::Green));
+        if entity.get(c.view, world).unwrap().render() == RENDER_T_BUTTON {
+            let s = termx.termx().systems();
+            s.render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
+        }
     }
 
     pub fn init_group_box_impl(this: &Rc<dyn IsInit>, entity: Entity<Termx>, world: &mut World<Termx>) {

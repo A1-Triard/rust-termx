@@ -2,7 +2,7 @@ use std::rc::Rc;
 use termx_screen_ncurses::{self};
 use termx::base::{MonoClock, World};
 use termx::components::static_text::StaticText;
-use termx::components::t_button::TButton;
+use termx::components::button::Button;
 use termx::systems::input::InputExt;
 use termx::template::Template;
 use termx::termx::{Termx, TermxExt};
@@ -23,12 +23,12 @@ fn main() {
     let termx_ref_1 = Rc::downgrade(&termx);
     let ok_str = Rc::new("OK".to_string());
     let cancel_str = Rc::new("Cancel".to_string());
-    TButton::on_click(ok, world, &termx, Some(Box::new(move |world| {
+    Button::on_click(ok, world, &termx, Some(Box::new(move |world| {
         let termx = termx_ref_1.upgrade().unwrap();
         StaticText::set_text(text, world, &termx, ok_str.clone());
     })));
     let termx_ref_2 = Rc::downgrade(&termx);
-    TButton::on_click(cancel, world, &termx, Some(Box::new(move |world| {
+    Button::on_click(cancel, world, &termx, Some(Box::new(move |world| {
         let termx = termx_ref_2.upgrade().unwrap();
         StaticText::set_text(text, world, &termx, cancel_str.clone());
     })));

@@ -1,44 +1,20 @@
 use alloc::string::String;
 use alloc::rc::Rc;
-use alloc::boxed::Box;
-use crate::base::{Fg, Bg};
+use crate::components::button::Button;
 use crate::components::view::*;
 use crate::components::layout_view::*;
 use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::*;
-use crate::event_handler::EventHandler;
-use crate::property;
 use crate::systems::init::InitExt;
-use crate::systems::input::Timer;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
 use ooecs::{Entity, World};
 
-pub struct TButton {
-    text: Rc<String>,
-    color: (Fg, Bg),
-    color_hotkey: (Fg, Bg),
-    color_focused: (Fg, Bg),
-    color_focused_hotkey: (Fg, Bg),
-    color_disabled: (Fg, Bg),
-    pub(crate) pressed: Option<Timer>,
-    pub(crate) is_mouse_pressed: bool,
-    pub(crate) click_handler: EventHandler<Option<Box<dyn FnMut(&mut World<Termx>)>>>,
-}
+pub struct TButton { }
 
 impl TButton {
     pub fn new() -> Self {
-        TButton {
-            text: Rc::new(String::new()),
-            color: (Fg::Black, Bg::Green),
-            color_hotkey: (Fg::Yellow, Bg::Green),
-            color_focused: (Fg::White, Bg::Green),
-            color_focused_hotkey: (Fg::Yellow, Bg::Green),
-            color_disabled: (Fg::DarkGray, Bg::Green),
-            pressed: None,
-            is_mouse_pressed: false,
-            click_handler: Default::default(),
-        }
+        TButton { }
     }
 
     pub fn new_entity(world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
@@ -47,28 +23,11 @@ impl TButton {
         b.add(c.view, world, View::new(TREE_NONE, RENDER_T_BUTTON));
         b.add(c.layout_view, world, LayoutView::new(LAYOUT_T_BUTTON));
         b.add(c.focus_scope, world, FocusScope::new());
-        b.add(c.input_element, world, InputElement::new(INPUT_T_BUTTON));
+        b.add(c.input_element, world, InputElement::new(INPUT_BUTTON));
+        b.add(c.button, world, Button::new());
         b.add(c.t_button, world, TButton::new());
         termx.termx().systems().init.init_t_button(b, world);
         b
-    }
-
-    property!(Termx, t_button, text, ref Rc<String>, @measure);
-    property!(Termx, t_button, color, (Fg, Bg), @render);
-    property!(Termx, t_button, color_hotkey, (Fg, Bg), @render);
-    property!(Termx, t_button, color_focused, (Fg, Bg), @render);
-    property!(Termx, t_button, color_focused_hotkey, (Fg, Bg), @render);
-    property!(Termx, t_button, color_disabled, (Fg, Bg), @render);
-
-    pub fn on_click(
-        entity: Entity<Termx>,
-        world: &mut World<Termx>, 
-        termx: &Rc<dyn IsTermx>,
-        handler: Option<Box<dyn FnMut(&mut World<Termx>)>>,
-    ) {
-        let termx = termx.termx();
-        let c = termx.components();
-        entity.get_mut(c.t_button, world).unwrap().click_handler.set(handler);
     }
 }
 
@@ -84,41 +43,11 @@ macro_rules! t_button_template {
             ),+ $(,)?)?
         }
     ) => {
-        $crate::input_element_template! {
+        $crate::button_template! {
             $(#[$attr])*
             $vis struct $name in $mod {
-                use $crate::base::serialize_color as components_t_button_serialize_color;
-                use $crate::base::deserialize_color as components_t_button_deserialize_color;
                 $(use $path as $import;)*
 
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                pub text: Option<$crate::alloc_string_String>,
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="components_t_button_serialize_color")]
-                #[serde(deserialize_with="components_t_button_deserialize_color")]
-                pub color: Option<($crate::base::Fg, $crate::base::Bg)>,
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="components_t_button_serialize_color")]
-                #[serde(deserialize_with="components_t_button_deserialize_color")]
-                pub color_hotkey: Option<($crate::base::Fg, $crate::base::Bg)>,
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="components_t_button_serialize_color")]
-                #[serde(deserialize_with="components_t_button_deserialize_color")]
-                pub color_focused: Option<($crate::base::Fg, $crate::base::Bg)>,
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="components_t_button_serialize_color")]
-                #[serde(deserialize_with="components_t_button_deserialize_color")]
-                pub color_focused_hotkey: Option<($crate::base::Fg, $crate::base::Bg)>,
-                #[serde(default)]
-                #[serde(skip_serializing_if="Option::is_none")]
-                #[serde(serialize_with="components_t_button_serialize_color")]
-                #[serde(deserialize_with="components_t_button_deserialize_color")]
-                pub color_disabled: Option<($crate::base::Fg, $crate::base::Bg)>,
                 $($(
                     $(#[$field_attr])*
                     pub $field_name : $field_ty
@@ -131,28 +60,7 @@ macro_rules! t_button_template {
 #[macro_export]
 macro_rules! t_button_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
-        $crate::input_element_apply_template! { $this, $entity, $world, $termx, $names }
-        $this.text.as_ref().map(|x|
-            $crate::components::t_button::TButton::set_text(
-                $entity,
-                $world,
-                $termx,
-                $crate::alloc_rc_Rc::new(x.clone())
-            )
-        );
-        $this.color.map(|x| $crate::components::t_button::TButton::set_color($entity, $world, $termx, x));
-        $this.color_hotkey.map(|x|
-            $crate::components::t_button::TButton::set_color_hotkey($entity, $world, $termx, x)
-        );
-        $this.color_focused.map(
-            |x| $crate::components::t_button::TButton::set_color_focused($entity, $world, $termx, x)
-        );
-        $this.color_focused_hotkey.map(
-            |x| $crate::components::t_button::TButton::set_color_focused_hotkey($entity, $world, $termx, x)
-        );
-        $this.color_disabled.map(
-            |x| $crate::components::t_button::TButton::set_color_disabled($entity, $world, $termx, x)
-        );
+        $crate::button_apply_template! { $this, $entity, $world, $termx, $names }
     };
 }
 

@@ -96,6 +96,43 @@ fn render_background(
     rp.fill(|rp, p| rp.text(p, background.color(), background.pattern().as_str()));
 }
 
+fn render_button(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
+) {
+    let render = this.render();
+    let termx = render.termx.upgrade().unwrap();
+    let termx = termx.termx();
+    let c = termx.components();
+    let button = entity.get(c.button, world).unwrap();
+    let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
+
+    let (color, color_hotkey) = if !is_enabled {
+        (button.color_disabled(), button.color_disabled())
+    } else if is_focused {
+        (button.color_focused(), button.color_focused_hotkey())
+    } else {
+        (button.color(), button.color_hotkey())
+    };
+
+    let text_bounds = Thickness::new(2, 0, 2, 0).shrink_rect(inner_bounds);
+    let text_align = Thickness::align(
+        Vector { x: min(label_width(button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+        text_bounds.size,
+        HAlign::Center,
+        VAlign::Center
+    );
+    let text_bounds = text_align.shrink_rect(text_bounds);
+    rp.fill_bg(color);
+    rp.label_in_rect(text_bounds, color, color_hotkey, button.text());
+    rp.text(inner_bounds.tl, color, "[");
+    rp.text(inner_bounds.br_inner(), color, "]");
+}
+
 fn render_t_button(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
@@ -107,34 +144,34 @@ fn render_t_button(
     let termx = render.termx.upgrade().unwrap();
     let termx = termx.termx();
     let c = termx.components();
-    let t_button = entity.get(c.t_button, world).unwrap();
+    let button = entity.get(c.button, world).unwrap();
     let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
     let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
 
     let (color, color_hotkey) = if !is_enabled {
-        (t_button.color_disabled(), t_button.color_disabled())
+        (button.color_disabled(), button.color_disabled())
     } else if is_focused {
-        (t_button.color_focused(), t_button.color_focused_hotkey())
+        (button.color_focused(), button.color_focused_hotkey())
     } else {
-        (t_button.color(), t_button.color_hotkey())
+        (button.color(), button.color_hotkey())
     };
 
-    if t_button.pressed.is_some() || t_button.is_mouse_pressed {
+    if button.is_pressed() {
         let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(inner_bounds);
         let text_align = Thickness::align(
-            Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+            Vector { x: min(label_width(button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
             text_bounds.size,
             HAlign::Center,
             VAlign::Center
         );
         let text_bounds = text_align.shrink_rect(text_bounds);
         rp.fill_bg(color);
-        rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
+        rp.label_in_rect(text_bounds, color, color_hotkey, button.text());
     } else {
         let bg_bounds = Thickness::new(0, 0, 1, 1).shrink_rect(inner_bounds);
         let text_bounds = Thickness::new(1, 0, 1, 0).shrink_rect(bg_bounds);
         let text_align = Thickness::align(
-            Vector { x: min(label_width(t_button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
+            Vector { x: min(label_width(button.text()), text_bounds.w()), y: min(1, text_bounds.h()) },
             text_bounds.size,
             HAlign::Center,
             VAlign::Center
@@ -143,7 +180,7 @@ fn render_t_button(
         let bottom_shadow_bounds = Thickness::new(1, 0, 0, 0).shrink_rect(inner_bounds.b_line());
         let right_shadow_bounds = Thickness::new(0, 1, 0, 1).shrink_rect(inner_bounds.r_line());
         rp.fill_rect(bg_bounds, |rp, p| rp.text(p, color, " "));
-        rp.label_in_rect(text_bounds, color, color_hotkey, t_button.text());
+        rp.label_in_rect(text_bounds, color, color_hotkey, button.text());
         rp.fill_rect(bottom_shadow_bounds, |rp, p| rp.half_shadow(p, "▀"));
         rp.fill_rect(right_shadow_bounds, |rp, p| rp.half_shadow(p, "█"));
         rp.half_shadow(inner_bounds.tr_inner(), "▄");
@@ -267,6 +304,7 @@ impl Render {
             RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
             RENDER_STATIC_TEXT => render_static_text(this, entity, world, rp, inner_bounds),
             RENDER_BORDER => render_border(this, entity, world, rp, inner_bounds),
+            RENDER_BUTTON => render_button(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

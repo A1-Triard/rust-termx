@@ -1,9 +1,10 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cell::Cell;
-use crate::base::{Visibility, Thickness, Vector};
+use crate::base::Visibility;
 use crate::components::input_element::*;
 use crate::systems::render::RenderExt;
+use crate::systems::reactive::ReactiveExt;
 use crate::termx::IsTermx;
 use timer_no_std::MonoTime;
 
@@ -71,7 +72,7 @@ pub struct Input {
     drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
-fn t_button_handle_click(
+fn button_handle_click(
     this: &Rc<dyn IsInput>,
     entity: Entity<Termx>,
     world: &mut World<Termx>,
@@ -83,34 +84,32 @@ fn t_button_handle_click(
         clock,
         |entity, world, termx| {
             let c = termx.termx().components();
-            &mut entity.get_mut(c.t_button, world).unwrap().pressed
+            &mut entity.get_mut(c.button, world).unwrap().pressed
         },
         100,
         |entity, world, termx| {
             let c = termx.termx().components();
-            if !entity.get(c.t_button, world).unwrap().is_mouse_pressed {
-                let render = &termx.termx().systems().render;
-                render.invalidate_render(entity, world);
-                render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
-                render.set_visual_offset(entity, world, Vector::null());
+            if !entity.get(c.button, world).unwrap().is_mouse_pressed {
+                let s = termx.termx().systems();
+                s.render.invalidate_render(entity, world);
+                s.reactive.button_is_pressed_changed(entity, world);
             }
         },
     );
     let input = this.input();
     let termx = input.termx.upgrade().unwrap();
     let c = termx.termx().components();
-    if !entity.get(c.t_button, world).unwrap().is_mouse_pressed {
-        let render = &termx.termx().systems().render;
-        render.invalidate_render(entity, world);
-        render.set_shadow(entity, world, Thickness::all(0));
-        render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
+    if !entity.get(c.button, world).unwrap().is_mouse_pressed {
+        let s = termx.termx().systems();
+        s.render.invalidate_render(entity, world);
+        s.reactive.button_is_pressed_changed(entity, world);
     }
-    let mut handler = entity.get_mut(c.t_button, world).unwrap().click_handler.begin_invoke();
+    let mut handler = entity.get_mut(c.button, world).unwrap().click_handler.begin_invoke();
     handler.as_mut().map(|f| f(world));
-    entity.get_mut(c.t_button, world).unwrap().click_handler.end_invoke(handler);
+    entity.get_mut(c.button, world).unwrap().click_handler.end_invoke(handler);
 }
 
-fn t_button_handle_lmb(
+fn button_handle_lmb(
     this: &Rc<dyn IsInput>,
     entity: Entity<Termx>,
     world: &mut World<Termx>,
@@ -119,36 +118,34 @@ fn t_button_handle_lmb(
     down: Option<bool>,
 ) -> bool {
     let Some(down) = down else {
-        t_button_handle_click(this, entity, world, clock);
+        button_handle_click(this, entity, world, clock);
         return true;
     };
     let input = this.input();
     let termx = input.termx.upgrade().unwrap();
     let c = termx.termx().components();
-    let render = &termx.termx().systems().render;
-    let t_button = entity.get_mut(c.t_button, world).unwrap();
+    let s = termx.termx().systems();
+    let button = entity.get_mut(c.button, world).unwrap();
     if down {
-        t_button.is_mouse_pressed = true;
-        if t_button.pressed.is_none() {
-            render.invalidate_render(entity, world);
-            render.set_shadow(entity, world, Thickness::all(0));
-            render.set_visual_offset(entity, world, Vector { x: 1, y: 0 });
+        button.is_mouse_pressed = true;
+        if button.pressed.is_none() {
+            s.render.invalidate_render(entity, world);
+            s.reactive.button_is_pressed_changed(entity, world);
         }
-        let mut handler = entity.get_mut(c.t_button, world).unwrap().click_handler.begin_invoke();
+        let mut handler = entity.get_mut(c.button, world).unwrap().click_handler.begin_invoke();
         handler.as_mut().map(|f| f(world));
-        entity.get_mut(c.t_button, world).unwrap().click_handler.end_invoke(handler);
+        entity.get_mut(c.button, world).unwrap().click_handler.end_invoke(handler);
     } else {
-        t_button.is_mouse_pressed = false;
-        if t_button.pressed.is_none() {
-            render.invalidate_render(entity, world);
-            render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
-            render.set_visual_offset(entity, world, Vector::null());
+        button.is_mouse_pressed = false;
+        if button.pressed.is_none() {
+            s.render.invalidate_render(entity, world);
+            s.reactive.button_is_pressed_changed(entity, world);
         }
     }
     true
 }
 
-fn t_button_handle_key(
+fn button_handle_key(
     this: &Rc<dyn IsInput>,
     entity: Entity<Termx>,
     world: &mut World<Termx>,
@@ -157,7 +154,7 @@ fn t_button_handle_key(
 ) -> bool {
     match key {
         Key::Enter => {
-            t_button_handle_click(this, entity, world, clock);
+            button_handle_click(this, entity, world, clock);
             true
         },
         _ => false
@@ -350,7 +347,7 @@ impl Input {
         let termx = input.termx.upgrade().unwrap();
         let c = termx.termx().components();
         match entity.get(c.input_element, world).unwrap().input() {
-            INPUT_T_BUTTON => t_button_handle_key(this, entity, world, clock, key),
+            INPUT_BUTTON => button_handle_key(this, entity, world, clock, key),
             _ => false
         }
     }
@@ -367,7 +364,7 @@ impl Input {
         let termx = input.termx.upgrade().unwrap();
         let c = termx.termx().components();
         match entity.get(c.input_element, world).unwrap().input() {
-            INPUT_T_BUTTON => t_button_handle_lmb(this, entity, world, clock, point, down),
+            INPUT_BUTTON => button_handle_lmb(this, entity, world, clock, point, down),
             _ => false
         }
     }

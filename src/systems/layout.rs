@@ -305,6 +305,30 @@ fn arrange_static_text(
     ).size
 }
 
+fn measure_button(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    _w: Option<i16>,
+    _h: Option<i16>,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let text = &entity.get(c.button, world).unwrap().text();
+    let text_width = label_width(text);
+    Thickness::new(2, 0, 2, 0).expand_rect_size(Vector { x: text_width, y: 1 })
+}
+
+fn arrange_button(
+    _this: &Rc<dyn IsLayout>,
+    _entity: Entity<Termx>,
+    _world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    inner_bounds.size
+}
+
 fn measure_t_button(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
@@ -315,7 +339,7 @@ fn measure_t_button(
     let layout = this.layout();
     let termx = layout.termx.upgrade().unwrap();
     let c = termx.termx().components();
-    let text = &entity.get(c.t_button, world).unwrap().text();
+    let text = &entity.get(c.button, world).unwrap().text();
     let text_width = label_width(text);
     Thickness::new(1, 0, 1, 0).expand_rect_size(Vector { x: text_width, y: 1 })
 }
@@ -452,6 +476,7 @@ impl Layout {
             LAYOUT_BORDER => measure_border(this, entity, world, w, h),
             LAYOUT_ADORNERS_PANEL => measure_adorners_panel(this, entity, world, w, h),
             LAYOUT_CONTROL => measure_control(this, entity, world, w, h),
+            LAYOUT_BUTTON => measure_button(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -475,6 +500,7 @@ impl Layout {
             LAYOUT_BORDER => arrange_border(this, entity, world, inner_bounds),
             LAYOUT_ADORNERS_PANEL => arrange_adorners_panel(this, entity, world, inner_bounds),
             LAYOUT_CONTROL => arrange_control(this, entity, world, inner_bounds),
+            LAYOUT_BUTTON => arrange_button(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

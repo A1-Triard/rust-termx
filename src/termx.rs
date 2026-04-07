@@ -19,10 +19,12 @@ use crate::components::border::Border;
 use crate::components::adorners_panel::AdornersPanel;
 use crate::components::control::Control;
 use crate::components::group_box::GroupBox;
+use crate::components::button::Button;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
 use crate::systems::init::{IsInit, Init};
+use crate::systems::reactive::{IsReactive, Reactive};
 use ooecs::Component;
 
 import! { pub termx:
@@ -53,6 +55,7 @@ pub struct TermxComponents {
     pub adorners_panel: Component<AdornersPanel, Termx>,
     pub control: Component<Control, Termx>,
     pub group_box: Component<GroupBox, Termx>,
+    pub button: Component<Button, Termx>,
 }
 
 pub struct TermxSystems {
@@ -60,6 +63,7 @@ pub struct TermxSystems {
     pub layout: Rc<dyn IsLayout>,
     pub input: Rc<dyn IsInput>,
     pub init: Rc<dyn IsInit>,
+    pub reactive: Rc<dyn IsReactive>,
 }
 
 pub struct Ref<'a, T>(cell::Ref<'a, Option<T>>);
@@ -90,6 +94,8 @@ pub struct Termx {
     create_input: fn() -> Rc<dyn IsInput>,
     #[virt]
     create_init: fn() -> Rc<dyn IsInit>,
+    #[virt]
+    create_reactive: fn() -> Rc<dyn IsReactive>,
     #[non_virt]
     run: fn(
         root: Entity<Termx>,
@@ -142,13 +148,14 @@ impl Termx {
         let canvas_layout: Component<CanvasLayout, Termx> = Component::new(view_layout, world);
         let canvas: Component<Canvas, Termx> = Component::new(panel, world);
         let input_element: Component<InputElement, Termx> = Component::new(focus_scope, world);
-        let t_button: Component<TButton, Termx> = Component::new(input_element, world);
         let static_text: Component<StaticText, Termx> = Component::new(layout_view, world);
         let content_presenter: Component<ContentPresenter, Termx> = Component::new(focus_scope, world);
         let border: Component<Border, Termx> = Component::new(decorator, world);
         let adorners_panel: Component<AdornersPanel, Termx> = Component::new(panel, world);
         let control: Component<Control, Termx> = Component::new(input_element, world);
         let group_box: Component<GroupBox, Termx> = Component::new(control, world);
+        let button: Component<Button, Termx> = Component::new(input_element, world);
+        let t_button: Component<TButton, Termx> = Component::new(button, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -168,6 +175,7 @@ impl Termx {
             adorners_panel,
             control,
             group_box,
+            button,
         }));
     }
 
@@ -176,12 +184,14 @@ impl Termx {
         let layout = this.create_layout();
         let input = this.create_input();
         let init = this.create_init();
+        let reactive = this.create_reactive();
         let termx = this.termx();
         termx.systems.replace(Some(TermxSystems {
             render,
             layout,
             input,
             init,
+            reactive,
         }));
     }
 
@@ -199,6 +209,10 @@ impl Termx {
 
     pub fn create_init_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsInit> {
         Init::new(this)
+    }
+
+    pub fn create_reactive_impl(this: &Rc<dyn IsTermx>) -> Rc<dyn IsReactive> {
+        Reactive::new(this)
     }
 
     pub fn drop_entity_impl(this: &Rc<dyn IsTermx>, entity: Entity<Termx>, world: &mut World<Termx>) {
