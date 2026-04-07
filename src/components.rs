@@ -15,3 +15,4 @@ pub mod content_presenter;
 pub mod border;
 pub mod adorners_panel;
 pub mod control;
+pub mod group_box;

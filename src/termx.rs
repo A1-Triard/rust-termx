@@ -18,6 +18,7 @@ use crate::components::static_text::StaticText;
 use crate::components::border::Border;
 use crate::components::adorners_panel::AdornersPanel;
 use crate::components::control::Control;
+use crate::components::group_box::GroupBox;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
@@ -51,6 +52,7 @@ pub struct TermxComponents {
     pub border: Component<Border, Termx>,
     pub adorners_panel: Component<AdornersPanel, Termx>,
     pub control: Component<Control, Termx>,
+    pub group_box: Component<GroupBox, Termx>,
 }
 
 pub struct TermxSystems {
@@ -146,6 +148,7 @@ impl Termx {
         let border: Component<Border, Termx> = Component::new(decorator, world);
         let adorners_panel: Component<AdornersPanel, Termx> = Component::new(panel, world);
         let control: Component<Control, Termx> = Component::new(input_element, world);
+        let group_box: Component<GroupBox, Termx> = Component::new(control, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -164,6 +167,7 @@ impl Termx {
             border,
             adorners_panel,
             control,
+            group_box,
         }));
     }
 
