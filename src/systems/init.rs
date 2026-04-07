@@ -1,5 +1,6 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
+use crate::alloc::string::ToString;
 use crate::base::{ViewVAlign, TextWrapping};
 use crate::components::adorners_panel::AdornersPanel;
 use crate::components::background::Background;
@@ -80,6 +81,7 @@ impl Init {
         FocusScope::set_tab_index(part_header_background, world, &termx, 0);
         Background::set_fit_to_content(part_header_background, world, &termx, true);
         Background::set_color(part_header_background, world, &termx, color);
+        Background::set_pattern(part_header_background, world, &termx, Rc::new(" ".to_string()));
         LayoutView::set_margin(part_header_background, world, &termx, Thickness::new(1, 0, 1, 0));
         LayoutView::set_h_align(part_header_background, world, &termx, header_align);
 

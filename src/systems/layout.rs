@@ -1,6 +1,7 @@
 use alloc::rc::{self, Rc};
 use basic_oop::{Vtable, import, class_unsafe};
 use core::cmp::min;
+use core::mem::replace;
 use crate::base::{ViewHAlign, ViewVAlign, label_width, Visibility};
 use crate::components::layout_view::*;
 use crate::systems::render::RenderExt;
@@ -378,16 +379,18 @@ fn measure_adorners_panel(
     let termx = layout.termx.upgrade().unwrap();
     let c = termx.termx().components();
     let children = entity.get(c.panel, world).unwrap().children().to_vec();
-    let mut size = Vector::null();
+    let mut render_size = Vector::null();
+    let mut desired_size = Vector::null();
     for (is_first, child) in children.into_iter().identify_first() {
         if is_first {
+            render_size = child.get(c.layout_view, world).unwrap().render_bounds.size;
             this.measure(child, world, w, h);
-            size = child.get(c.layout_view, world).unwrap().desired_size;
+            desired_size = child.get(c.layout_view, world).unwrap().desired_size;
         } else {
-            this.measure(child, world, Some(size.x), Some(size.y));
+            this.measure(child, world, Some(render_size.x), Some(render_size.y));
         }
     }
-    size
+    desired_size
 }
 
 fn arrange_adorners_panel(
@@ -403,8 +406,13 @@ fn arrange_adorners_panel(
     let mut child_bounds = inner_bounds;
     for (is_first, child) in children.into_iter().identify_first() {
         if is_first {
+            let prev_render_size = child.get(c.layout_view, world).unwrap().render_bounds.size;
             this.arrange(child, world, inner_bounds);
             child_bounds = child.get(c.layout_view, world).unwrap().render_bounds;
+            if child_bounds.size != prev_render_size {
+                this.invalidate_measure(entity, world);
+                return Vector::null();
+            }
         } else {
             this.arrange(child, world, child_bounds);
         }
@@ -520,15 +528,15 @@ impl Layout {
         let layout = this.layout();
         let termx = layout.termx.upgrade().unwrap();
         let c = termx.termx().components();
+        let component = entity.get_mut(c.layout_view, world).unwrap();
+        if component.measure_size == Some((w, h)) { return; }
+        component.measure_size = Some((w, h));
         if entity.get(c.view, world).unwrap().visibility() == Visibility::Collapsed {
-            let component = entity.get_mut(c.layout_view, world).unwrap();
-            component.measure_size = Some((w, h));
-            component.desired_size = Vector::null();
+            entity.get_mut(c.layout_view, world).unwrap().desired_size = Vector::null();
             return;
         }
+        let component = entity.get(c.layout_view, world).unwrap();
         let (a_w, a_h, max_size, min_size) = {
-            let component = entity.get(c.layout_view, world).unwrap();
-            if component.measure_size == Some((w, h)) { return; }
             let max_width = component.width().or(component.max_width());
             let max_height = component.height().or(component.max_height());
             let max_size = Vector { x: max_width.unwrap_or(-1), y: max_height.unwrap_or(-1) };
@@ -553,7 +561,6 @@ impl Layout {
             x: w.map_or(desired_size.x, |w| min(w as u16, desired_size.x as u16) as i16),
             y: h.map_or(desired_size.y, |h| min(h as u16, desired_size.y as u16) as i16),
         };
-        component.measure_size = Some((w, h));
         component.desired_size = desired_size;
     }
 
@@ -567,6 +574,10 @@ impl Layout {
         let termx = layout.termx.upgrade().unwrap();
         let c = termx.termx().components();
         let collapsed = entity.get(c.view, world).unwrap().visibility() == Visibility::Collapsed;
+        let do_arrange = replace(
+            &mut entity.get_mut(c.layout_view, world).unwrap().arrange_size,
+            Some(bounds.size)
+        ) != Some(bounds.size);
         let (render_bounds, real_render_bounds, real_render_bounds_with_shadow) = if collapsed {
             let rect = Rect { tl: Point { x: 0, y: 0 }, size: Vector::null() };
             (rect, rect, rect)
@@ -580,7 +591,7 @@ impl Layout {
                     x: component.width().unwrap_or(component.min_size().x),
                     y: component.height().unwrap_or(component.min_size().y),
                 };
-                if Some(bounds.size) == component.arrange_size {
+                if !do_arrange {
                     (None, max_size, min_size)
                 } else {
                     let a_size = component.margin().shrink_rect_size(bounds.size).min(max_size).max(min_size);
@@ -619,7 +630,6 @@ impl Layout {
                 && real_render_bounds_with_shadow == view.real_render_bounds_with_shadow
             {
                 let component = entity.get_mut(c.layout_view, world).unwrap();
-                component.arrange_size = Some(bounds.size);
                 component.render_bounds = render_bounds;
                 return;
             }
@@ -627,7 +637,6 @@ impl Layout {
         termx.termx().systems().render.invalidate_render(entity, world);
         {
             let component = entity.get_mut(c.layout_view, world).unwrap();
-            component.arrange_size = Some(bounds.size);
             component.render_bounds = render_bounds;
         }
         {
@@ -639,7 +648,17 @@ impl Layout {
     }
 
     pub fn perform_impl(this: &Rc<dyn IsLayout>, root: Entity<Termx>, world: &mut World<Termx>, size: Vector) {
-        this.measure(root, world, Some(size.x), Some(size.y));
-        this.arrange(root, world, Rect { tl: Point { x: 0, y: 0 }, size });
+        const MAX_ROUNDS: usize = 8;
+        let layout = this.layout();
+        let termx = layout.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        for _ in 0 .. MAX_ROUNDS {
+            this.measure(root, world, Some(size.x), Some(size.y));
+            this.arrange(root, world, Rect { tl: Point { x: 0, y: 0 }, size });
+            let layout_view = root.get(c.layout_view, world).unwrap();
+            if layout_view.measure_size.is_some() && layout_view.arrange_size.is_some() {
+                break;
+            }
+        }
     }
 }
