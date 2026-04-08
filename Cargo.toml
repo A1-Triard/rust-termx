@@ -27,3 +27,4 @@ serde = { version = "1.0.228", default-features = false }
 termx-screen-base = { version = "0.1.0", path = "screen-base" }
 timer-no-std = "0.6.0"
 typetag = "0.2.21"
+unicode-width = "0.2.2"

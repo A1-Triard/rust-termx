@@ -36,6 +36,7 @@ pub mod render_port;
 pub mod template;
 pub mod xaml;
 pub mod text_renderer;
+pub mod line_edit;
 
 #[macro_export]
 macro_rules! property_ro {
