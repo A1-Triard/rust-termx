@@ -96,7 +96,7 @@ fn render_background(
     rp.fill(|rp, p| rp.text(p, background.color(), background.pattern().as_str()));
 }
 
-fn render_button(
+fn render_m_button(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
     world: &World<Termx>,
@@ -107,16 +107,19 @@ fn render_button(
     let termx = render.termx.upgrade().unwrap();
     let termx = termx.termx();
     let c = termx.components();
+    let m_button = entity.get(c.m_button, world).unwrap();
     let button = entity.get(c.button, world).unwrap();
     let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
     let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
 
     let (color, color_hotkey) = if !is_enabled {
-        (button.color_disabled(), button.color_disabled())
+        (m_button.color_disabled(), m_button.color_disabled())
+    } else if button.is_pressed() {
+        (m_button.color_pressed(), m_button.color_pressed())
     } else if is_focused {
-        (button.color_focused(), button.color_focused_hotkey())
+        (m_button.color_focused(), m_button.color_focused_hotkey())
     } else {
-        (button.color(), button.color_hotkey())
+        (m_button.color(), m_button.color_hotkey())
     };
 
     let text_bounds = Thickness::new(2, 0, 2, 0).shrink_rect(inner_bounds);
@@ -144,16 +147,17 @@ fn render_t_button(
     let termx = render.termx.upgrade().unwrap();
     let termx = termx.termx();
     let c = termx.components();
+    let t_button = entity.get(c.t_button, world).unwrap();
     let button = entity.get(c.button, world).unwrap();
     let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
     let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
 
     let (color, color_hotkey) = if !is_enabled {
-        (button.color_disabled(), button.color_disabled())
+        (t_button.color_disabled(), t_button.color_disabled())
     } else if is_focused {
-        (button.color_focused(), button.color_focused_hotkey())
+        (t_button.color_focused(), t_button.color_focused_hotkey())
     } else {
-        (button.color(), button.color_hotkey())
+        (t_button.color(), t_button.color_hotkey())
     };
 
     if button.is_pressed() {
@@ -304,7 +308,7 @@ impl Render {
             RENDER_T_BUTTON => render_t_button(this, entity, world, rp, inner_bounds),
             RENDER_STATIC_TEXT => render_static_text(this, entity, world, rp, inner_bounds),
             RENDER_BORDER => render_border(this, entity, world, rp, inner_bounds),
-            RENDER_BUTTON => render_button(this, entity, world, rp, inner_bounds),
+            RENDER_M_BUTTON => render_m_button(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

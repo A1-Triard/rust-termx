@@ -305,7 +305,7 @@ fn arrange_static_text(
     ).size
 }
 
-fn measure_button(
+fn measure_m_button(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
     world: &mut World<Termx>,
@@ -320,7 +320,7 @@ fn measure_button(
     Thickness::new(2, 0, 2, 0).expand_rect_size(Vector { x: text_width, y: 1 })
 }
 
-fn arrange_button(
+fn arrange_m_button(
     _this: &Rc<dyn IsLayout>,
     _entity: Entity<Termx>,
     _world: &mut World<Termx>,
@@ -476,7 +476,7 @@ impl Layout {
             LAYOUT_BORDER => measure_border(this, entity, world, w, h),
             LAYOUT_ADORNERS_PANEL => measure_adorners_panel(this, entity, world, w, h),
             LAYOUT_CONTROL => measure_control(this, entity, world, w, h),
-            LAYOUT_BUTTON => measure_button(this, entity, world, w, h),
+            LAYOUT_M_BUTTON => measure_m_button(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -500,7 +500,7 @@ impl Layout {
             LAYOUT_BORDER => arrange_border(this, entity, world, inner_bounds),
             LAYOUT_ADORNERS_PANEL => arrange_adorners_panel(this, entity, world, inner_bounds),
             LAYOUT_CONTROL => arrange_control(this, entity, world, inner_bounds),
-            LAYOUT_BUTTON => arrange_button(this, entity, world, inner_bounds),
+            LAYOUT_M_BUTTON => arrange_m_button(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

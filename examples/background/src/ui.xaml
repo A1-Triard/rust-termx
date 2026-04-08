@@ -21,10 +21,10 @@
         <CanvasLayout Tl="20,6" />
       </GroupBox.Layout>
     </GroupBox>
-    <Button Text="Default">
-      <Button.Layout>
+    <MButton Text="Default">
+      <MButton.Layout>
         <CanvasLayout Tl="20,14" />
-      </Button.Layout>
-    </Button>
+      </MButton.Layout>
+    </MButton>
   </Canvas>
 </Border>
