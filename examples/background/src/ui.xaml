@@ -26,10 +26,10 @@
         <CanvasLayout Tl="20,14" />
       </MButton.Layout>
     </MButton>
-    <InputLine Width="8">
-      <InputLine.Layout>
+    <TInputLine Width="8">
+      <TInputLine.Layout>
         <CanvasLayout Tl="33,14" />
-      </InputLine.Layout>
-    </InputLine>
+      </TInputLine.Layout>
+    </TInputLine>
   </Canvas>
 </Border>

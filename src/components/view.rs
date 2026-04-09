@@ -34,7 +34,7 @@ pub const RENDER_T_BUTTON: u16 = 2;
 pub const RENDER_STATIC_TEXT: u16 = 3;
 pub const RENDER_BORDER: u16 = 4;
 pub const RENDER_M_BUTTON: u16 = 5;
-pub const RENDER_INPUT_LINE: u16 = 6;
+pub const RENDER_T_INPUT_LINE: u16 = 6;
 
 impl View {
     pub fn new(tree: u16, render: u16) -> Self {
