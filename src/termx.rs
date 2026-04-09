@@ -21,6 +21,7 @@ use crate::components::control::Control;
 use crate::components::group_box::GroupBox;
 use crate::components::button::Button;
 use crate::components::m_button::MButton;
+use crate::components::input_line::InputLine;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
@@ -58,6 +59,7 @@ pub struct TermxComponents {
     pub group_box: Component<GroupBox, Termx>,
     pub button: Component<Button, Termx>,
     pub m_button: Component<MButton, Termx>,
+    pub input_line: Component<InputLine, Termx>,
 }
 
 pub struct TermxSystems {
@@ -159,6 +161,7 @@ impl Termx {
         let button: Component<Button, Termx> = Component::new(input_element, world);
         let t_button: Component<TButton, Termx> = Component::new(button, world);
         let m_button: Component<MButton, Termx> = Component::new(button, world);
+        let input_line: Component<InputLine, Termx> = Component::new(input_element, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -180,6 +183,7 @@ impl Termx {
             group_box,
             button,
             m_button,
+            input_line,
         }));
     }
 

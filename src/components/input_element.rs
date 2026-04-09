@@ -9,6 +9,7 @@ pub struct InputElement {
 
 pub const INPUT_NONE: u16 = 0;
 pub const INPUT_BUTTON: u16 = 1;
+pub const INPUT_INPUT_LINE: u16 = 2;
 
 impl InputElement {
     pub fn new(input: u16) -> Self {

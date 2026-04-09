@@ -16,6 +16,8 @@ pub struct Reactive {
     termx: rc::Weak<dyn IsTermx>,
     #[virt]
     button_is_pressed_changed: fn(entity: Entity<Termx>, world: &mut World<Termx>),
+    #[virt]
+    input_element_is_focused_changed: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
 impl Reactive {
@@ -46,6 +48,25 @@ impl Reactive {
             } else {
                 s.render.set_shadow(entity, world, Thickness::new(0, 0, 1, 1));
                 s.render.set_visual_offset(entity, world, Vector::null());
+            }
+        }
+    }
+
+    pub fn input_element_is_focused_changed_impl(
+        this: &Rc<dyn IsReactive>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+    ) {
+        let reactive = this.reactive();
+        let termx = reactive.termx.upgrade().unwrap();
+        let c = termx.termx().components();
+        let input_element = entity.get(c.input_element, world).unwrap();
+        let is_focused = input_element.is_focused();
+        if let Some(input_line) = entity.get_mut(c.input_line, world) {
+            let invalidate_render = input_line.line_edit.set_is_focused(is_focused);
+            if invalidate_render {
+                let s = termx.termx().systems();
+                s.render.invalidate_render(entity, world);
             }
         }
     }

@@ -353,6 +353,34 @@ fn arrange_t_button(
     inner_bounds.size
 }
 
+fn measure_input_line(
+    _this: &Rc<dyn IsLayout>,
+    _entity: Entity<Termx>,
+    _world: &mut World<Termx>,
+    w: Option<i16>,
+    _h: Option<i16>,
+) -> Vector {
+    Vector { x: w.unwrap_or(2), y: 1 }
+}
+
+fn arrange_input_line(
+    this: &Rc<dyn IsLayout>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    inner_bounds: Rect,
+) -> Vector {
+    let layout = this.layout();
+    let termx = layout.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let width = Thickness::new(1, 0, 1, 0).shrink_rect(inner_bounds).w();
+    let invalidate_render = entity.get_mut(c.input_line, world).unwrap().line_edit.set_width(width);
+    if invalidate_render {
+        let s = termx.termx().systems();
+        s.render.invalidate_render(entity, world);
+    }
+    inner_bounds.size
+}
+
 fn measure_border(
     this: &Rc<dyn IsLayout>,
     entity: Entity<Termx>,
@@ -477,6 +505,7 @@ impl Layout {
             LAYOUT_ADORNERS_PANEL => measure_adorners_panel(this, entity, world, w, h),
             LAYOUT_CONTROL => measure_control(this, entity, world, w, h),
             LAYOUT_M_BUTTON => measure_m_button(this, entity, world, w, h),
+            LAYOUT_INPUT_LINE => measure_input_line(this, entity, world, w, h),
             _ => Vector::null()
         }
     }
@@ -501,6 +530,7 @@ impl Layout {
             LAYOUT_ADORNERS_PANEL => arrange_adorners_panel(this, entity, world, inner_bounds),
             LAYOUT_CONTROL => arrange_control(this, entity, world, inner_bounds),
             LAYOUT_M_BUTTON => arrange_m_button(this, entity, world, inner_bounds),
+            LAYOUT_INPUT_LINE => arrange_input_line(this, entity, world, inner_bounds),
             _ => Vector::null()
         }
     }

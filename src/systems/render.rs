@@ -191,6 +191,47 @@ fn render_t_button(
     }
 }
 
+fn render_input_line(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
+) {
+    let render = this.render();
+    let termx = render.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let input_line = entity.get(c.input_line, world).unwrap();
+    let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(c.input_element, world).unwrap().is_focused;
+
+    let color = if !is_enabled {
+        input_line.color_disabled()
+    } else if is_focused {
+        input_line.color_focused()
+    } else {
+        input_line.color()
+    };
+
+    rp.fill_bg(color);
+
+    if let Some(render_info) = input_line.line_edit.render() {
+        let text_area = Thickness::new(1, 0, 1, 0).shrink_rect(inner_bounds);
+        let text_start = text_area.tl.offset(Vector { x: render_info.text_start, y: 0 });
+        rp.text(text_start, color, render_info.text);
+        if render_info.left_ellipsis {
+            rp.text(inner_bounds.tl, color, "◄");
+        }
+        if render_info.right_ellipsis {
+            rp.text(inner_bounds.tr_inner(), color, "►");
+        }
+        if let Some(cursor_x) = render_info.cursor {
+            let cursor = text_area.tl.offset(Vector { x: cursor_x, y: 0 });
+            rp.cursor(cursor);
+        }
+    }
+}
+
 fn render_border(
     this: &Rc<dyn IsRender>,
     entity: Entity<Termx>,
@@ -309,6 +350,7 @@ impl Render {
             RENDER_STATIC_TEXT => render_static_text(this, entity, world, rp, inner_bounds),
             RENDER_BORDER => render_border(this, entity, world, rp, inner_bounds),
             RENDER_M_BUTTON => render_m_button(this, entity, world, rp, inner_bounds),
+            RENDER_INPUT_LINE => render_input_line(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

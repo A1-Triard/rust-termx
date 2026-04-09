@@ -72,6 +72,72 @@ pub struct Input {
     drop_entity: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
+fn input_line_handle_key(
+    this: &Rc<dyn IsInput>,
+    entity: Entity<Termx>,
+    world: &mut World<Termx>,
+    key: Key,
+) -> bool {
+    let input = this.input();
+    let termx = input.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let s = termx.termx().systems();
+    let input_line = entity.get_mut(c.input_line, world).unwrap();
+    match key {
+        Key::Left => {
+            let invalidate_render = input_line.line_edit.cursor_left();
+            if invalidate_render {
+                s.render.invalidate_render(entity, world);
+            }
+            true
+        },
+        Key::Right => {
+            let invalidate_render = input_line.line_edit.cursor_right();
+            if invalidate_render {
+                s.render.invalidate_render(entity, world);
+            }
+            true
+        },
+        Key::Home => {
+            let invalidate_render = input_line.line_edit.cursor_home();
+            if invalidate_render {
+                s.render.invalidate_render(entity, world);
+            }
+            true
+        },
+        Key::End => {
+            let invalidate_render = input_line.line_edit.cursor_end();
+            if invalidate_render {
+                s.render.invalidate_render(entity, world);
+            }
+            true
+        },
+        Key::Char(ch) => {
+            let changed = input_line.line_edit.type_char(ch);
+            if changed {
+                s.render.invalidate_render(entity, world);
+                let mut handler
+                    = entity.get_mut(c.input_line, world).unwrap().text_changed_handler.begin_invoke();
+                handler.as_mut().map(|f| f(world));
+                entity.get_mut(c.input_line, world).unwrap().text_changed_handler.end_invoke(handler);
+            }
+            changed
+        },
+        Key::Backspace => {
+            let changed = input_line.line_edit.delete_before_cursor();
+            if changed {
+                s.render.invalidate_render(entity, world);
+                let mut handler
+                    = entity.get_mut(c.input_line, world).unwrap().text_changed_handler.begin_invoke();
+                handler.as_mut().map(|f| f(world));
+                entity.get_mut(c.input_line, world).unwrap().text_changed_handler.end_invoke(handler);
+            }
+            true
+        },
+        _ => false,
+    }
+}
+
 fn button_handle_click(
     this: &Rc<dyn IsInput>,
     entity: Entity<Termx>,
@@ -196,8 +262,10 @@ impl Input {
         let input = this.input();
         let termx = input.termx.upgrade().unwrap();
         let c = termx.termx().components();
-        let render = &termx.termx().systems().render;
-        if let Some(prev) = input.focused.get() {
+        let s = termx.termx().systems();
+        let render = &s.render;
+        let prev = input.focused.get();
+        if let Some(prev) = prev {
             prev.get_mut(c.input_element, world).unwrap().is_focused = false;
             render.invalidate_render(prev, world);
         }
@@ -205,6 +273,12 @@ impl Input {
         if let Some(next) = entity {
             next.get_mut(c.input_element, world).unwrap().is_focused = true;
             render.invalidate_render(next, world);
+        }
+        if let Some(prev) = prev {
+            s.reactive.input_element_is_focused_changed(prev, world);
+        }
+        if let Some(next) = entity {
+            s.reactive.input_element_is_focused_changed(next, world);
         }
     }
 
@@ -348,6 +422,7 @@ impl Input {
         let c = termx.termx().components();
         match entity.get(c.input_element, world).unwrap().input() {
             INPUT_BUTTON => button_handle_key(this, entity, world, clock, key),
+            INPUT_INPUT_LINE => input_line_handle_key(this, entity, world, key),
             _ => false
         }
     }
