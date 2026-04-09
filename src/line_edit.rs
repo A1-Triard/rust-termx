@@ -93,7 +93,7 @@ impl LineEdit {
             let with_end = view_end == self.text.len();
             let text = if with_end { &self.text[.. view_end] } else { &self.text[..= view_end] };
             let mut w = if with_end { 1i16 } else { 0i16 };
-            let mut prev_g: Option<Range<usize>> = None;
+            let mut prev_g: Option<Range<usize>> = if with_end { Some(view_end .. view_end) } else { None };
             for (g, g_w) in graphemes(text).rev() {
                 if w.wrapping_add(g_w) as u16 > self.width as u16 {
                     break 'r prev_g.map(|x| (self.width.wrapping_sub(w), x.start ..= view_end));
