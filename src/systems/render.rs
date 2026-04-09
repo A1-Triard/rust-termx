@@ -204,9 +204,12 @@ fn render_t_input_line(
     let input_line = entity.get(c.input_line, world).unwrap();
     let t_input_line = entity.get(c.t_input_line, world).unwrap();
     let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(c.input_element, world).unwrap().is_focused();
 
     let color = if !is_enabled {
         t_input_line.color_disabled()
+    } else if is_focused {
+        t_input_line.color_focused()
     } else {
         t_input_line.color()
     };
@@ -225,6 +228,41 @@ fn render_t_input_line(
         }
         if let Some(cursor_x) = render_info.cursor {
             let cursor = text_area.tl.offset(Vector { x: cursor_x, y: 0 });
+            rp.cursor(cursor);
+        }
+    }
+}
+
+fn render_m_input_line(
+    this: &Rc<dyn IsRender>,
+    entity: Entity<Termx>,
+    world: &World<Termx>,
+    rp: &mut RenderPort,
+    inner_bounds: Rect,
+) {
+    let render = this.render();
+    let termx = render.termx.upgrade().unwrap();
+    let c = termx.termx().components();
+    let input_line = entity.get(c.input_line, world).unwrap();
+    let m_input_line = entity.get(c.m_input_line, world).unwrap();
+    let is_enabled = entity.get(c.focus_scope, world).unwrap().is_enabled();
+    let is_focused = entity.get(c.input_element, world).unwrap().is_focused();
+
+    let color = if !is_enabled {
+        m_input_line.color_disabled()
+    } else if is_focused {
+        m_input_line.color_focused()
+    } else {
+        m_input_line.color()
+    };
+
+    rp.fill_bg(color);
+
+    if let Some(render_info) = input_line.line_edit.render() {
+        let text_start = inner_bounds.tl.offset(Vector { x: render_info.text_start, y: 0 });
+        rp.text(text_start, color, render_info.text);
+        if let Some(cursor_x) = render_info.cursor {
+            let cursor = inner_bounds.tl.offset(Vector { x: cursor_x, y: 0 });
             rp.cursor(cursor);
         }
     }
@@ -349,6 +387,7 @@ impl Render {
             RENDER_BORDER => render_border(this, entity, world, rp, inner_bounds),
             RENDER_M_BUTTON => render_m_button(this, entity, world, rp, inner_bounds),
             RENDER_T_INPUT_LINE => render_t_input_line(this, entity, world, rp, inner_bounds),
+            RENDER_M_INPUT_LINE => render_m_input_line(this, entity, world, rp, inner_bounds),
             _ => { },
         }
     }

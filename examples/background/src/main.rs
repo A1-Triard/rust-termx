@@ -3,6 +3,7 @@ use termx_screen_ncurses::{self};
 use termx::base::{MonoClock, World};
 use termx::components::static_text::StaticText;
 use termx::components::button::Button;
+use termx::components::input_line::InputLine;
 use termx::systems::input::InputExt;
 use termx::template::Template;
 use termx::termx::{Termx, TermxExt};
@@ -16,6 +17,8 @@ fn main() {
     let xaml = include_str!("ui.xaml");
     let ui: Box<dyn Template> = xaml::from_str(xaml).unwrap();
     let (root, names) = ui.load_content(world, &termx);
+    let input = names.find("Input").unwrap();
+    InputLine::set_text(input, world, &termx, "Text".to_string());
     let text = names.find("Text").unwrap();
     let ok = names.find("Ok").unwrap();
     let cancel = names.find("Cancel").unwrap();

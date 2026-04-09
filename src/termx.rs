@@ -23,6 +23,7 @@ use crate::components::button::Button;
 use crate::components::m_button::MButton;
 use crate::components::input_line::InputLine;
 use crate::components::t_input_line::TInputLine;
+use crate::components::m_input_line::MInputLine;
 use crate::systems::layout::{IsLayout, Layout, LayoutExt};
 use crate::systems::render::{IsRender, Render, RenderExt};
 use crate::systems::input::{IsInput, Input, InputExt};
@@ -62,6 +63,7 @@ pub struct TermxComponents {
     pub m_button: Component<MButton, Termx>,
     pub input_line: Component<InputLine, Termx>,
     pub t_input_line: Component<TInputLine, Termx>,
+    pub m_input_line: Component<MInputLine, Termx>,
 }
 
 pub struct TermxSystems {
@@ -165,6 +167,7 @@ impl Termx {
         let m_button: Component<MButton, Termx> = Component::new(button, world);
         let input_line: Component<InputLine, Termx> = Component::new(input_element, world);
         let t_input_line: Component<TInputLine, Termx> = Component::new(input_line, world);
+        let m_input_line: Component<MInputLine, Termx> = Component::new(input_line, world);
         termx.components.replace(Some(TermxComponents {
             view,
             layout_view,
@@ -188,6 +191,7 @@ impl Termx {
             m_button,
             input_line,
             t_input_line,
+            m_input_line,
         }));
     }
 
