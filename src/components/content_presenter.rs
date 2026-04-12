@@ -6,6 +6,7 @@ use crate::components::layout_view::*;
 use crate::components::focus_scope::FocusScope;
 use crate::components::static_text::StaticText;
 use crate::components::view::*;
+use crate::resources::Resources;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::template::{Template, NameResolver};
@@ -213,8 +214,10 @@ macro_rules! content_presenter_template {
 macro_rules! content_presenter_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
+        let c = ($termx).termx().components();
         $this.content.as_ref().map(|x| {
-            let value = x.load_content_inline($world, $termx, $names);
+            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
+            let value = x.load_content_inline($world, $termx, $names, Some(resources));
             $crate::components::content_presenter::ContentPresenter::set_content(
                 $entity, $world, $termx, Some(value)
             );
@@ -249,6 +252,16 @@ impl Template for ContentPresenterTemplate {
 
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         ContentPresenter::new_entity(world, termx)
+    }
+
+    fn apply_resources(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        View::apply_resources(&self.resources, entity, world, termx, base_resources)
     }
 
     fn apply(

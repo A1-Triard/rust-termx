@@ -10,6 +10,7 @@ use serde::de::{self, DeserializeSeed, IntoDeserializer};
 use serde::de::value::{StringDeserializer, StrDeserializer};
 use serde::de::Error as de_Error;
 
+const TERMX: &'static str = "https://a1-triard.github.io/termx/2026/xaml/termx";
 const XAML: &'static str = "https://a1-triard.github.io/termx/2026/xaml";
 const XML: &'static str = "http://www.w3.org/XML/1998/namespace";
 
@@ -77,13 +78,12 @@ impl<S: Iterator<Item=u8>> Reader<S> {
     }
 }
 
-pub fn from_iter<'a, T>(s: impl Iterator<Item=u8> + 'a) -> Result<T, Error> where T: Deserialize<'a>
-{
+pub fn from_iter<'a, T>(s: impl Iterator<Item=u8> + 'a) -> Result<T, Error> where T: Deserialize<'a> {
     let mut reader = Reader::new(no_std_xml::EventReader::new(s))?;
     let no_std_xml::reader::XmlEvent::StartDocument { .. } = reader.next()? else {
         return Err(Error::Unexpected { expected: "document start".to_string() });
     };
-    let deserializer = XamlDeserializer { reader: &mut reader };
+    let deserializer = XamlDeserializer { reader: &mut reader, in_map: false };
     let res = T::deserialize(deserializer)?;
     let e = reader.next()?;
     let no_std_xml::reader::XmlEvent::EndDocument = &e else {
@@ -114,13 +114,14 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::SeqAccess<'de> for XamlSeqAccess<'
                 return Err(Error::Unexpected { expected: "element start or element end".to_string() });
             },
         }
-        let res = seed.deserialize(XamlDeserializer { reader: self.reader })?;
+        let res = seed.deserialize(XamlDeserializer { reader: self.reader, in_map: false })?;
         Ok(Some(res))
     }
 }
 
 struct XamlObjectAccess<'a, S: Iterator<Item=u8>> {
     reader: &'a mut Reader<S>,
+    in_map: bool,
     name: String,
     attributes: Option<Vec<no_std_xml::attribute::OwnedAttribute>>,
     done: bool,
@@ -141,7 +142,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlObjectAcces
         let no_std_xml::reader::XmlEvent::StartElement { name, attributes, .. } = self.reader.next()? else {
             return Err(Error::Unexpected { expected: "element start".to_string() });
         };
-        if name.namespace_ref() != Some(XAML) { return Err(Error::UnknownOrMissingXmlns); }
+        if name.namespace_ref() != Some(TERMX) { return Err(Error::UnknownOrMissingXmlns); }
         self.name = name.local_name;
         self.attributes = Some(attributes);
         let name = seed.deserialize::<StrDeserializer<Self::Error>>(self.name.as_str().into_deserializer())?;
@@ -153,6 +154,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlObjectAcces
         let object_name_prefix = replace(&mut self.name, String::new()) + ".";
         let res = seed.deserialize(XamlPropertiesDeserializer {
             reader: self.reader,
+            in_map: self.in_map,
             object_name_prefix,
             attributes,
         })?;
@@ -165,6 +167,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlObjectAcces
 
 struct XamlPropertiesAccess<'a, S: Iterator<Item=u8>> {
     reader: &'a mut Reader<S>,
+    in_map: bool,
     object_name_prefix: String,
     attributes: vec::IntoIter<no_std_xml::attribute::OwnedAttribute>,
     value: Option<String>,
@@ -190,7 +193,18 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlPropertiesA
                         }
                         continue;
                     }
-                    return Err(Error::Unexpected { expected: "attribute without namespace or xml:space".to_string() });
+                    if self.in_map && ns == XAML && attribute.name.local_name == "Key" {
+                        continue;
+                    }
+                    return if self.in_map {
+                        Err(Error::Unexpected {
+                            expected: "attribute without namespace or xml:space or x:Key".to_string()
+                        })
+                    } else {
+                        Err(Error::Unexpected {
+                            expected: "attribute without namespace or xml:space".to_string()
+                        })
+                    };
                 }
                 break Some(attribute);
             } else {
@@ -206,7 +220,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlPropertiesA
         } else {
             match self.reader.peek() {
                 no_std_xml::reader::XmlEvent::StartElement { name, attributes, .. } => {
-                    if name.namespace_ref() != Some(XAML) { return Err(Error::UnknownOrMissingXmlns); }
+                    if name.namespace_ref() != Some(TERMX) { return Err(Error::UnknownOrMissingXmlns); }
                     let mut attribute_preserve_spaces = false;
                     let property_name = if !name.local_name.starts_with(&self.object_name_prefix) {
                         let Some(default_property_name) = self.default_property_name else {
@@ -277,7 +291,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlPropertiesA
         if let Some(value) = self.value.take() {
             seed.deserialize(TextDeserializer { text: value })
         } else {
-            let res = seed.deserialize(XamlDeserializer { reader: self.reader })?;
+            let res = seed.deserialize(XamlDeserializer { reader: self.reader, in_map: false })?;
             if self.full_explicit {
                 let no_std_xml::reader::XmlEvent::EndElement { .. } = self.reader.next()? else {
                     return Err(Error::Unexpected { expected: format!("property end") });
@@ -290,6 +304,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlPropertiesA
 
 struct XamlPropertiesDeserializer<'a, S: Iterator<Item=u8>> {
     reader: &'a mut Reader<S>,
+    in_map: bool,
     object_name_prefix: String,
     attributes: Vec<no_std_xml::attribute::OwnedAttribute>,
 }
@@ -429,6 +444,7 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlPropertiesDe
         let default_property_name = name.split('@').skip(1).last();
         visitor.visit_map(XamlPropertiesAccess {
             reader: self.reader,
+            in_map: self.in_map,
             attributes: self.attributes.into_iter(),
             value: None,
             object_name_prefix: self.object_name_prefix,
@@ -445,8 +461,219 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlPropertiesDe
     }
 }
 
+struct XamlMapAccess<'a, S: Iterator<Item=u8>> {
+    reader: &'a mut Reader<S>,
+}
+
+impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::MapAccess<'de> for XamlMapAccess<'a, S> {
+    type Error = Error;
+
+    fn next_key_seed<K>(
+        &mut self,
+        seed: K,
+    ) -> Result<Option<K::Value>, Self::Error> where K: DeserializeSeed<'de> {
+        match self.reader.peek() {
+            no_std_xml::reader::XmlEvent::StartElement { name, attributes, .. } => {
+                if name.namespace_ref() != Some(TERMX) { return Err(Error::UnknownOrMissingXmlns); }
+                let mut key = None;
+                for attribute in attributes {
+                    if let Some(ns) = attribute.name.namespace_ref() {
+                        if ns == XAML && attribute.name.local_name == "Key" {
+                            if key.is_some() {
+                                return Err(Error::Custom("dublicate x:Key".to_string()));
+                            }
+                            key = Some(attribute.value.as_str().to_string());
+                        }
+                    }
+                }
+                let key = key.unwrap_or_else(|| "IMPLICIT_".to_string() + &name.local_name);
+                let key = seed.deserialize::<StringDeserializer<Self::Error>>(
+                    key.into_deserializer()
+                )?;
+                Ok(Some(key))
+            },
+            no_std_xml::reader::XmlEvent::EndElement { .. } => Ok(None),
+            x => {
+                Err(Error::Unexpected { expected: format!("element start or element end ({x:?})") })
+            },
+        }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error> where V: DeserializeSeed<'de> {
+        seed.deserialize(XamlDeserializer { reader: self.reader, in_map: true })
+    }
+}
+
+struct XamlMapTupleAccess<'a, S: Iterator<Item=u8>> {
+    reader: &'a mut Reader<S>,
+    done: bool,
+}
+
+impl<'a, 'de, S: Iterator<Item=u8> + 'de> de::SeqAccess<'de> for XamlMapTupleAccess<'a, S> {
+    type Error = Error;
+
+    fn size_hint(&self) -> Option<usize> { Some(1) }
+
+    fn next_element_seed<T>(
+        &mut self,
+        seed: T,
+    ) -> Result<Option<T::Value>, Self::Error> where T: DeserializeSeed<'de> {
+        if self.done { return Ok(None); }
+        self.done = true;
+        seed.deserialize(XamlMapDeserializer { reader: self.reader }).map(Some)
+    }
+}
+
+struct XamlMapDeserializer<'a, S: Iterator<Item=u8>> {
+    reader: &'a mut Reader<S>,
+}
+
+impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlMapDeserializer<'a, S> {
+    type Error = Error;
+
+    fn is_human_readable(&self) -> bool { true }
+
+    fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_identifier<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_bool<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_i8<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_i16<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_i32<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_i64<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_f32<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_f64<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_u8<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_u16<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_u32<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_u64<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_i128<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_u128<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_char<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_str<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_string<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_bytes<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_byte_buf<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_option<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_unit<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_unit_struct<V>(
+        self, _: &'static str, _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_newtype_struct<V>(
+        self, _: &'static str, _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_seq<V>(self, _: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        visitor.visit_map(XamlMapAccess { reader: self.reader })
+    }
+
+    fn deserialize_tuple<V>(
+        self, _: usize, _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_tuple_struct<V>(
+        self, _: &'static str, _: usize, _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_struct<V>(
+        self, _: &'static str, _: &'static [&'static str], _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+
+    fn deserialize_enum<V>(
+        self, _: &'static str, _: &'static [&'static str], _: V
+    ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        panic!("not supported")
+    }
+}
+
+
 struct XamlDeserializer<'a, S: Iterator<Item=u8>> {
     reader: &'a mut Reader<S>,
+    in_map: bool,
 }
 
 impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlDeserializer<'a, S> {
@@ -559,12 +786,16 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlDeserializer
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
+        if self.in_map {
+            panic!("not supported");
+        }
         visitor.visit_seq(XamlSeqAccess { reader: self.reader })
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
         visitor.visit_map(XamlObjectAccess {
             reader: self.reader,
+            in_map: self.in_map,
             name: String::new(),
             attributes: None,
             done: false
@@ -572,9 +803,15 @@ impl<'a, 'de, S: Iterator<Item=u8> + 'de> Deserializer<'de> for XamlDeserializer
     }
 
     fn deserialize_tuple<V>(
-        self, _: usize, _: V
+        self, len: usize, visitor: V
     ) -> Result<V::Value, Self::Error> where V: de::Visitor<'de> {
-        panic!("not supported")
+        if len != 1 {
+            panic!("not supported")
+        }
+        visitor.visit_seq(XamlMapTupleAccess {
+            reader: self.reader,
+            done: false,
+        })
     }
 
     fn deserialize_tuple_struct<V>(

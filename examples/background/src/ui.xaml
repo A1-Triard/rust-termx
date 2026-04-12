@@ -1,4 +1,7 @@
-<Border xmlns='https://a1-triard.github.io/termx/2026/xaml' Color="Black/LightGray" Double="True">
+<Border xmlns='https://a1-triard.github.io/termx/2026/xaml/termx' Color="Black/LightGray" Double="True">
+  <Border.Resources>
+    <TButton Color="White/Black" />
+  </Border.Resources>
   <Canvas>
     <TButton Text="~O~K" Width="8" Name="Ok">
       <TButton.Layout>

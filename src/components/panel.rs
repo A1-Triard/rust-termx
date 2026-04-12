@@ -97,7 +97,11 @@ macro_rules! panel_template {
 macro_rules! panel_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
-        let children = $this.children.iter().map(|x| x.load_content_inline($world, $termx, $names)).collect();
+        let c = ($termx).termx().components();
+        let children = $this.children.iter().map(|x| {
+            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
+            x.load_content_inline($world, $termx, $names, Some(resources))
+        }).collect();
         $crate::components::panel::Panel::set_children($entity, $world, $termx, &children);
     };
 }

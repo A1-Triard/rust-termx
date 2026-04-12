@@ -1,11 +1,15 @@
+use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use core::mem::replace;
 use crate::base::Visibility;
 use crate::{property_rw, property_ro};
+use crate::resources::Resources;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
+use crate::template::Template;
 use crate::termx::{Termx, IsTermx};
+use hashbrown::HashMap;
 use int_vec_2d::{Rect, Point, Vector, Thickness};
 use ooecs::{Entity, World};
 
@@ -20,6 +24,7 @@ pub struct View {
     visibility: Visibility,
     pub(crate) visual_offset: Vector,
     pub(crate) shadow: Thickness,
+    pub resources: Rc<Resources>,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -50,6 +55,7 @@ impl View {
             visibility: Visibility::Visible,
             visual_offset: Vector { x: 0, y: 0 },
             shadow: Thickness::all(0),
+            resources: Rc::new(Resources::new()),
         }
     }
 
@@ -119,11 +125,33 @@ impl View {
             s.render.invalidate_render(entity, world);
         }
     }
+
+    pub fn apply_resources(
+        resources: &(HashMap<String, Box<dyn Template>>,),
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        let resources = Rc::new(Resources {
+            base: base_resources,
+            map: resources.0.clone(),
+        });
+        let c = termx.termx().components();
+        entity.get_mut(c.view, world).unwrap().resources = resources.clone();
+        Some(resources)
+    }
+
 }
 
 #[doc(hidden)]
 pub fn string_is_empty(x: &String) -> bool {
     x.is_empty()
+}
+
+#[doc(hidden)]
+pub fn resources_is_empty(x: &(HashMap<String, Box<dyn Template>>,)) -> bool {
+    x.0.is_empty()
 }
 
 #[macro_export]
@@ -142,11 +170,21 @@ macro_rules! view_template {
             $(#[$attr])*
             $vis struct $name in $mod {
                 use $crate::components::view::string_is_empty as components_view_string_is_empty;
+                use $crate::components::view::resources_is_empty as components_view_resources_is_empty;
                 $(use $path as $import;)*
 
                 #[serde(default)]
                 #[serde(skip_serializing_if="components_view_string_is_empty")]
                 pub name: $crate::alloc_string_String,
+                #[serde(default)]
+                #[serde(skip_serializing_if="components_view_string_is_empty")]
+                pub style_key: $crate::alloc_string_String,
+                #[serde(default)]
+                #[serde(skip_serializing_if="components_view_resources_is_empty")]
+                pub resources: ($crate::hashbrown_HashMap<
+                    $crate::alloc_string_String,
+                    $crate::alloc_boxed_Box<dyn $crate::template::Template>
+                >,),
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
                 pub layout: Option<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,
@@ -166,9 +204,11 @@ macro_rules! view_template {
 macro_rules! view_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         let _ = $names;
+        let c = ($termx).termx().components();
         $crate::components::view::View::set_name($entity, $world, $termx, $this.name.clone());
         $this.layout.as_ref().map(|x| {
-            let value = x.load_content_inline($world, $termx, $names);
+            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
+            let value = x.load_content_inline($world, $termx, $names, Some(resources));
             $crate::components::view::View::set_layout($entity, $world, $termx, Some(value));
         });
         $this.visibility.map(|x| $crate::components::view::View::set_visibility($entity, $world, $termx, x));

@@ -2,6 +2,7 @@ use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::view_layout::ViewLayout;
 use crate::layout_property;
+use crate::resources::Resources;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
 use int_vec_2d::Point;
@@ -82,6 +83,16 @@ impl Template for CanvasLayoutTemplate {
 
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         CanvasLayout::new_entity(world, termx)
+    }
+
+    fn apply_resources(
+        &self,
+        _entity: Entity<Termx>,
+        _world: &mut World<Termx>,
+        _termx: &Rc<dyn IsTermx>,
+        _base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        None
     }
 
     fn apply(

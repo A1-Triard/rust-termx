@@ -4,6 +4,7 @@ use crate::property;
 use crate::base::{Fg, Bg, TextWrapping, TextAlign};
 use crate::components::layout_view::*;
 use crate::components::view::*;
+use crate::resources::Resources;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
 use ooecs::{Entity, World};
@@ -123,6 +124,16 @@ impl Template for StaticTextTemplate {
 
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         StaticText::new_entity(world, termx)
+    }
+
+    fn apply_resources(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        View::apply_resources(&self.resources, entity, world, termx, base_resources)
     }
 
     fn apply(

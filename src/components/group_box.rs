@@ -10,6 +10,7 @@ use crate::components::view::*;
 use crate::components::focus_scope::FocusScope;
 use crate::components::input_element::*;
 use crate::components::control::Control;
+use crate::resources::Resources;
 use crate::systems::init::InitExt;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
@@ -226,6 +227,7 @@ macro_rules! group_box_template {
 macro_rules! group_box_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::control_apply_template! { $this, $entity, $world, $termx, $names }
+        let c = ($termx).termx().components();
         $this.double.map(|x|
             $crate::components::group_box::GroupBox::set_double($entity, $world, $termx, x)
         );
@@ -236,7 +238,8 @@ macro_rules! group_box_apply_template {
             $crate::components::group_box::GroupBox::set_header_align($entity, $world, $termx, x)
         );
         $this.content.as_ref().map(|x| {
-            let value = x.load_content_inline($world, $termx, $names);
+            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
+            let value = x.load_content_inline($world, $termx, $names, Some(resources));
             $crate::components::group_box::GroupBox::set_content(
                 $entity, $world, $termx, Some(value)
             );
@@ -250,7 +253,8 @@ macro_rules! group_box_apply_template {
             $crate::components::group_box::GroupBox::set_text_color($entity, $world, $termx, x)
         );
         $this.header.as_ref().map(|x| {
-            let value = x.load_content_inline($world, $termx, $names);
+            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
+            let value = x.load_content_inline($world, $termx, $names, Some(resources));
             $crate::components::group_box::GroupBox::set_header(
                 $entity, $world, $termx, Some(value)
             );
@@ -277,6 +281,16 @@ impl Template for GroupBoxTemplate {
 
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         GroupBox::new_entity(world, termx)
+    }
+
+    fn apply_resources(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        View::apply_resources(&self.resources, entity, world, termx, base_resources)
     }
 
     fn apply(

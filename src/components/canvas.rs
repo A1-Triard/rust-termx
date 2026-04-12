@@ -4,6 +4,7 @@ use crate::components::layout_view::*;
 use crate::components::panel::Panel;
 use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
+use crate::resources::Resources;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
 use ooecs::{Entity, World};
@@ -79,6 +80,16 @@ impl Template for CanvasTemplate {
 
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx> {
         Canvas::new_entity(world, termx)
+    }
+
+    fn apply_resources(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>> {
+        View::apply_resources(&self.resources, entity, world, termx, base_resources)
     }
 
     fn apply(

@@ -2,6 +2,7 @@ use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use crate::resources::Resources;
 use crate::termx::{Termx, IsTermx};
 use dyn_clone::{DynClone, clone_trait_object};
 use hashbrown::HashMap;
@@ -85,33 +86,60 @@ pub trait Template: DynClone {
         None
     }
 
+    fn style_key(&self) -> Option<&str> {
+        None
+    }
+
     fn create_entity(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> Entity<Termx>;
+
+    fn apply_resources(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> Option<Rc<Resources>>;
 
     fn apply(
         &self,
         entity: Entity<Termx>,
         world: &mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-        names: &mut NameResolver
+        names: &mut NameResolver,
     );
 
     fn load_content_inline(
         &self,
         world: &mut World<Termx>, 
         termx: &Rc<dyn IsTermx>,
-        names: &mut NameResolver
+        names: &mut NameResolver,
+        base_resources: Option<Rc<Resources>>,
     ) -> Entity<Termx> {
         let entity = self.create_entity(world, termx);
         if let Some(name) = self.name() && !name.is_empty() {
             names.names.register(name, entity);
         }
+        if let Some(resources) = self.apply_resources(entity, world, termx, base_resources) {
+            if let Some(style_key) = self.style_key() {
+                if let Some(style) = resources.get(style_key) {
+                    let mut name_resolver = NameResolver::new();
+                    style.apply(entity, world, termx, &mut name_resolver);
+                    name_resolver.finish();
+                }
+            }
+        }
         self.apply(entity, world, termx, names);
         entity
     }
 
-    fn load_content(&self, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) -> (Entity<Termx>, Names) {
+    fn load_content(
+        &self,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        base_resources: Option<Rc<Resources>>,
+    ) -> (Entity<Termx>, Names) {
         let mut name_resolver = NameResolver::new();
-        let instance = self.load_content_inline(world, termx, &mut name_resolver);
+        let instance = self.load_content_inline(world, termx, &mut name_resolver, base_resources);
         let names = name_resolver.finish();
         (instance, names)
     }

@@ -15,7 +15,7 @@ basic-oop = "0.8.3"
 dyn-clone = "1.0.20"
 dynamic-cast = "0.2.0"
 either = { version = "1.15.0", default-features = false }
-hashbrown = "0.16.1"
+hashbrown = { version = "0.16.1", features = ["serde"] }
 int-vec-2d = { version = "0.2.1", features = ["serde"] }
 iter-identify_first_last = "0.2.3"
 itertools = { version = "0.14.0", default-features = false }
