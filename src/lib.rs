@@ -23,6 +23,8 @@ pub use alloc::vec::Vec as alloc_vec_Vec;
 #[doc(hidden)]
 pub use basic_oop::obj::IsObj as basic_oop_obj_IsObj;
 #[doc(hidden)]
+pub use core::iter::zip as core_iter_zip;
+#[doc(hidden)]
 pub use hashbrown::HashMap as hashbrown_HashMap;
 #[doc(hidden)]
 pub use ooecs::Entity as ooecs_Entity;
@@ -39,7 +41,6 @@ pub mod template;
 pub mod xaml;
 pub mod text_renderer;
 pub mod line_edit;
-pub mod resources;
 
 #[macro_export]
 macro_rules! property_ro {

@@ -4,7 +4,6 @@ use alloc::string::String;
 use core::mem::replace;
 use crate::base::Visibility;
 use crate::{property_rw, property_ro};
-use crate::resources::Resources;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::template::Template;
@@ -24,7 +23,7 @@ pub struct View {
     visibility: Visibility,
     pub(crate) visual_offset: Vector,
     pub(crate) shadow: Thickness,
-    pub resources: Rc<Resources>,
+    pub resources: HashMap<String, Box<dyn Template>>,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -55,7 +54,7 @@ impl View {
             visibility: Visibility::Visible,
             visual_offset: Vector { x: 0, y: 0 },
             shadow: Thickness::all(0),
-            resources: Rc::new(Resources::new()),
+            resources: HashMap::new(),
         }
     }
 
@@ -126,22 +125,37 @@ impl View {
         }
     }
 
-    pub fn apply_resources(
-        resources: &(HashMap<String, Box<dyn Template>>,),
-        entity: Entity<Termx>,
-        world: &mut World<Termx>,
+    pub fn find_resource<'a>(
+        mut entity: Entity<Termx>,
+        world: &'a World<Termx>,
         termx: &Rc<dyn IsTermx>,
-        base_resources: Option<Rc<Resources>>,
-    ) -> Option<Rc<Resources>> {
-        let resources = Rc::new(Resources {
-            base: base_resources,
-            map: resources.0.clone(),
-        });
+        key: &str,
+    ) -> Option<&'a Box<dyn Template>> {
         let c = termx.termx().components();
-        entity.get_mut(c.view, world).unwrap().resources = resources.clone();
-        Some(resources)
+        loop {
+            let view = entity.get(c.view, world).unwrap();
+            if let Some(res) = view.resources.get(key) {
+                return Some(res);
+            }
+            let Some(parent) = view.visual_parent else { break; };
+            entity = parent;
+        }
+        None
     }
 
+    pub fn apply_resources<'a>(
+        resources: &(HashMap<String, Box<dyn Template>>,),
+        entity: Entity<Termx>,
+        world: &'a mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        style_key: &String,
+        implicit_style_key: &'static str,
+    ) -> Option<&'a Box<dyn Template>> {
+        let c = termx.termx().components();
+        entity.get_mut(c.view, world).unwrap().resources = resources.0.clone();
+        let style_key = if style_key.is_empty() { implicit_style_key } else { style_key };
+        Self::find_resource(entity, world, termx, style_key)
+    }
 }
 
 #[doc(hidden)]
@@ -203,13 +217,11 @@ macro_rules! view_template {
 #[macro_export]
 macro_rules! view_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
-        let _ = $names;
-        let c = ($termx).termx().components();
         $crate::components::view::View::set_name($entity, $world, $termx, $this.name.clone());
         $this.layout.as_ref().map(|x| {
-            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
-            let value = x.load_content_inline($world, $termx, $names, Some(resources));
+            let value = x.begin_load_content_inline($world, $termx, $names);
             $crate::components::view::View::set_layout($entity, $world, $termx, Some(value));
+            x.end_load_content_inline(value, $world, $termx, $names);
         });
         $this.visibility.map(|x| $crate::components::view::View::set_visibility($entity, $world, $termx, x));
     };

@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::layout_view::*;
@@ -5,7 +6,6 @@ use crate::components::panel::Panel;
 use crate::components::focus_scope::FocusScope;
 use crate::components::view::*;
 use crate::property;
-use crate::resources::Resources;
 use crate::template::{Template, NameResolver};
 use crate::termx::{Termx, IsTermx};
 use ooecs::{Entity, World};
@@ -93,14 +93,13 @@ impl Template for StackPanelTemplate {
         StackPanel::new_entity(world, termx)
     }
 
-    fn apply_resources(
+    fn apply_resources<'a>(
         &self,
         entity: Entity<Termx>,
-        world: &mut World<Termx>,
+        world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-        base_resources: Option<Rc<Resources>>,
-    ) -> Option<Rc<Resources>> {
-        View::apply_resources(&self.resources, entity, world, termx, base_resources)
+    ) -> Option<&'a Box<dyn Template>> {
+        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_StackPanel")
     }
 
     fn apply(

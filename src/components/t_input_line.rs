@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use crate::property;
@@ -7,7 +8,6 @@ use crate::components::input_line::InputLine;
 use crate::components::input_element::*;
 use crate::components::layout_view::*;
 use crate::components::view::*;
-use crate::resources::Resources;
 use crate::template::{Template, NameResolver};
 use crate::termx::{IsTermx, Termx};
 use ooecs::{Entity, World};
@@ -131,14 +131,13 @@ impl Template for TInputLineTemplate {
         TInputLine::new_entity(world, termx)
     }
 
-    fn apply_resources(
+    fn apply_resources<'a>(
         &self,
         entity: Entity<Termx>,
-        world: &mut World<Termx>,
+        world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-        base_resources: Option<Rc<Resources>>,
-    ) -> Option<Rc<Resources>> {
-        View::apply_resources(&self.resources, entity, world, termx, base_resources)
+    ) -> Option<&'a Box<dyn Template>> {
+        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_TInputLine")
     }
 
     fn apply(

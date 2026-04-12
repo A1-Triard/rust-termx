@@ -69,11 +69,10 @@ macro_rules! decorator_template {
 macro_rules! decorator_apply_template {
     ($this:ident, $entity:ident, $world:expr, $termx:expr, $names:ident) => {
         $crate::focus_scope_apply_template! { $this, $entity, $world, $termx, $names }
-        let c = ($termx).termx().components();
         $this.child.as_ref().map(|x| {
-            let resources = $entity.get(c.view, $world).unwrap().resources.clone();
-            let value = x.load_content_inline($world, $termx, $names, Some(resources));
+            let value = x.begin_load_content_inline($world, $termx, $names);
             $crate::components::decorator::Decorator::set_child($entity, $world, $termx, Some(value));
+            x.end_load_content_inline(value, $world, $termx, $names);
         });
     };
 }

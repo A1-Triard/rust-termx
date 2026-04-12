@@ -16,7 +16,8 @@ fn main() {
     let termx = Termx::new(world);
     let xaml = include_str!("ui.xaml");
     let ui: Box<dyn Template> = xaml::from_str(xaml).unwrap();
-    let (root, names) = ui.load_content(world, &termx, None);
+    let (root, names) = ui.begin_load_content(world, &termx);
+    let names = ui.end_load_content(root, world, &termx, names);
     let input = names.find("Input").unwrap();
     InputLine::set_text(input, world, &termx, "Text".to_string());
     let text = names.find("Text").unwrap();
