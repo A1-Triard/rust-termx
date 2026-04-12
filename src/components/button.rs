@@ -1,6 +1,6 @@
+use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::rc::Rc;
-use alloc::boxed::Box;
 use crate::event_handler::EventHandler;
 use crate::property;
 use crate::systems::input::Timer;

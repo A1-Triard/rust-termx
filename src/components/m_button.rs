@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::rc::Rc;
 use crate::base::{Fg, Bg};
@@ -156,8 +155,8 @@ impl Template for MButtonTemplate {
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>> {
-        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_MButton")
+    ) -> Option<&'a Rc<dyn Template>> {
+        View::apply_resources(self.resources.clone(), entity, world, termx, &self.style_key, "IMPLICIT_MButton")
     }
 
     fn apply(

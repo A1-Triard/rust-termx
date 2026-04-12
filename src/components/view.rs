@@ -8,9 +8,11 @@ use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
 use crate::template::Template;
 use crate::termx::{Termx, IsTermx};
+use dyn_clone::clone_box;
 use hashbrown::HashMap;
 use int_vec_2d::{Rect, Point, Vector, Thickness};
 use ooecs::{Entity, World};
+use serde::{Serializer, Serialize, Deserializer, Deserialize};
 
 pub struct View {
     pub(crate) visual_parent: Option<Entity<Termx>>,
@@ -23,7 +25,7 @@ pub struct View {
     visibility: Visibility,
     pub(crate) visual_offset: Vector,
     pub(crate) shadow: Thickness,
-    pub resources: HashMap<String, Box<dyn Template>>,
+    pub resources: Rc<HashMap<String, Rc<dyn Template>>>,
 }
 
 pub const TREE_NONE: u16 = 0;
@@ -54,7 +56,7 @@ impl View {
             visibility: Visibility::Visible,
             visual_offset: Vector { x: 0, y: 0 },
             shadow: Thickness::all(0),
-            resources: HashMap::new(),
+            resources: Rc::new(HashMap::new()),
         }
     }
 
@@ -130,7 +132,7 @@ impl View {
         world: &'a World<Termx>,
         termx: &Rc<dyn IsTermx>,
         key: &str,
-    ) -> Option<&'a Box<dyn Template>> {
+    ) -> Option<&'a Rc<dyn Template>> {
         let c = termx.termx().components();
         loop {
             let view = entity.get(c.view, world).unwrap();
@@ -144,15 +146,15 @@ impl View {
     }
 
     pub fn apply_resources<'a>(
-        resources: &(HashMap<String, Box<dyn Template>>,),
+        resources: Rc<HashMap<String, Rc<dyn Template>>>,
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
         style_key: &String,
         implicit_style_key: &'static str,
-    ) -> Option<&'a Box<dyn Template>> {
+    ) -> Option<&'a Rc<dyn Template>> {
         let c = termx.termx().components();
-        entity.get_mut(c.view, world).unwrap().resources = resources.0.clone();
+        entity.get_mut(c.view, world).unwrap().resources = resources;
         let style_key = if style_key.is_empty() { implicit_style_key } else { style_key };
         Self::find_resource(entity, world, termx, style_key)
     }
@@ -164,8 +166,32 @@ pub fn string_is_empty(x: &String) -> bool {
 }
 
 #[doc(hidden)]
-pub fn resources_is_empty(x: &(HashMap<String, Box<dyn Template>>,)) -> bool {
-    x.0.is_empty()
+pub fn resources_is_empty(x: &Rc<HashMap<String, Rc<dyn Template>>>) -> bool {
+    x.is_empty()
+}
+
+#[doc(hidden)]
+pub fn serialize_resources<S: Serializer>(
+    value: &Rc<HashMap<String, Rc<dyn Template>>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let mut b: HashMap<String, Box<dyn Template>> = HashMap::new();
+    for (k, v) in value.iter() {
+        b.insert(k.clone(), clone_box(&**v));
+    }
+    (b,).serialize(serializer)
+}
+
+#[doc(hidden)]
+pub fn deserialize_resources<'de, D: Deserializer<'de>>(
+    deserializer: D
+) -> Result<Rc<HashMap<String, Rc<dyn Template>>>, D::Error> {
+    let b = <(HashMap<String, Box<dyn Template>>,)>::deserialize(deserializer)?;
+    let mut res = HashMap::new();
+    for (k, v) in b.0 {
+        res.insert(k, v.into());
+    }
+    Ok(Rc::new(res))
 }
 
 #[macro_export]
@@ -185,6 +211,8 @@ macro_rules! view_template {
             $vis struct $name in $mod {
                 use $crate::components::view::string_is_empty as components_view_string_is_empty;
                 use $crate::components::view::resources_is_empty as components_view_resources_is_empty;
+                use $crate::components::view::serialize_resources as components_view_serialize_resources;
+                use $crate::components::view::deserialize_resources as components_view_deserialize_resources;
                 $(use $path as $import;)*
 
                 #[serde(default)]
@@ -195,10 +223,12 @@ macro_rules! view_template {
                 pub style_key: $crate::alloc_string_String,
                 #[serde(default)]
                 #[serde(skip_serializing_if="components_view_resources_is_empty")]
-                pub resources: ($crate::hashbrown_HashMap<
+                #[serde(serialize_with="components_view_serialize_resources")]
+                #[serde(deserialize_with="components_view_deserialize_resources")]
+                pub resources: $crate::alloc_rc_Rc<$crate::hashbrown_HashMap<
                     $crate::alloc_string_String,
-                    $crate::alloc_boxed_Box<dyn $crate::template::Template>
-                >,),
+                    $crate::alloc_rc_Rc<dyn $crate::template::Template>
+                >>,
                 #[serde(default)]
                 #[serde(skip_serializing_if="Option::is_none")]
                 pub layout: Option<$crate::alloc_boxed_Box<dyn $crate::template::Template>>,

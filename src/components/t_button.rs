@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::rc::Rc;
 use crate::property;
@@ -146,8 +145,8 @@ impl Template for TButtonTemplate {
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>> {
-        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_TButton")
+    ) -> Option<&'a Rc<dyn Template>> {
+        View::apply_resources(self.resources.clone(), entity, world, termx, &self.style_key, "IMPLICIT_TButton")
     }
 
     fn apply(

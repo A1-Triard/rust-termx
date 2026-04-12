@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::layout_view::*;
@@ -82,8 +81,10 @@ impl Template for AdornersPanelTemplate {
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>> {
-        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_AdornersPanel")
+    ) -> Option<&'a Rc<dyn Template>> {
+        View::apply_resources(
+            self.resources.clone(), entity, world, termx, &self.style_key, "IMPLICIT_AdornersPanel"
+        )
     }
 
     fn apply(

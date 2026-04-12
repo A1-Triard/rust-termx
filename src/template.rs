@@ -90,7 +90,7 @@ pub trait Template: DynClone {
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>>;
+    ) -> Option<&'a Rc<dyn Template>>;
 
     fn apply(
         &self,

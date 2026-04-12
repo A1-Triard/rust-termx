@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use crate::components::view_layout::ViewLayout;
@@ -90,7 +89,7 @@ impl Template for CanvasLayoutTemplate {
         _entity: Entity<Termx>,
         _world: &'a mut World<Termx>,
         _termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>> {
+    ) -> Option<&'a Rc<dyn Template>> {
         None
     }
 

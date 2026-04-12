@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::rc::Rc;
 use alloc::string::String;
 use crate::property;
@@ -287,8 +286,10 @@ impl Template for GroupBoxTemplate {
         entity: Entity<Termx>,
         world: &'a mut World<Termx>,
         termx: &Rc<dyn IsTermx>,
-    ) -> Option<&'a Box<dyn Template>> {
-        View::apply_resources(&self.resources, entity, world, termx, &self.style_key, "IMPLICIT_GroupBox")
+    ) -> Option<&'a Rc<dyn Template>> {
+        View::apply_resources(
+            self.resources.clone(), entity, world, termx, &self.style_key, "IMPLICIT_GroupBox"
+        )
     }
 
     fn apply(
