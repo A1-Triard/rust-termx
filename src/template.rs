@@ -100,6 +100,17 @@ pub trait Template: DynClone {
         names: &mut NameResolver,
     );
 
+    fn apply_style(
+        &self,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+    ) {
+        let mut name_resolver = NameResolver::new();
+        self.apply(entity, world, termx, &mut name_resolver);
+        name_resolver.finish();
+    }
+
     fn begin_load_content_inline(
         &self,
         world: &mut World<Termx>, 
@@ -121,9 +132,7 @@ pub trait Template: DynClone {
         names: &mut NameResolver,
     ) {
         if let Some(style) = self.apply_resources(entity, world, termx) {
-            let mut name_resolver = NameResolver::new();
-            style.clone().apply(entity, world, termx, &mut name_resolver);
-            name_resolver.finish();
+            style.clone().apply_style(entity, world, termx);
         }
         self.apply(entity, world, termx, names);
     }

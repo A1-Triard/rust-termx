@@ -30,6 +30,10 @@ impl Canvas {
         p.add(canvas, world, Canvas::new());
         p
     }
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_Canvas");
+    }
 }
 
 #[macro_export]

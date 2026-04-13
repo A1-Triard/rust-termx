@@ -49,6 +49,10 @@ impl TButton {
     property!(Termx, t_button, color_focused, (Fg, Bg), @render);
     property!(Termx, t_button, color_focused_hotkey, (Fg, Bg), @render);
     property!(Termx, t_button, color_disabled, (Fg, Bg), @render);
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_TButton");
+    }
 }
 
 #[macro_export]

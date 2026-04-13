@@ -158,6 +158,17 @@ impl View {
         let style_key = if style_key.is_empty() { implicit_style_key } else { style_key };
         Self::find_resource(entity, world, termx, style_key)
     }
+
+    pub fn apply_style(
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+        termx: &Rc<dyn IsTermx>,
+        style_key: &str
+    ) {
+        if let Some(style) = Self::find_resource(entity, world, termx, style_key) {
+            style.clone().apply_style(entity, world, termx);
+        }
+    }
 }
 
 #[doc(hidden)]

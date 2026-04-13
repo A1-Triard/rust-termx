@@ -51,6 +51,9 @@ impl MButton {
     property!(Termx, m_button, color_pressed, (Fg, Bg), @render);
     property!(Termx, m_button, color_disabled, (Fg, Bg), @render);
 
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_MButton");
+    }
 }
 
 #[macro_export]

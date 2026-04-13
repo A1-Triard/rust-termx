@@ -164,6 +164,10 @@ impl GroupBox {
             ContentPresenter::set_text(part_header_presenter, world, termx, value);
         }
     }
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_GroupBox");
+    }
 }
 
 #[macro_export]

@@ -39,6 +39,10 @@ impl Background {
     property!(Termx, background, pattern, ref Rc<String>, @render);
     property!(Termx, background, color, (Fg, Bg), @render);
     property!(Termx, background, fit_to_content, bool, @arrange);
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_Background");
+    }
 }
 
 #[macro_export]

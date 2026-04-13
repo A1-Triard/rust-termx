@@ -41,6 +41,10 @@ impl StaticText {
     property!(Termx, static_text, text_align, TextAlign, @render);
     property!(Termx, static_text, text_wrapping, TextWrapping, @render+measure);
     property!(Termx, static_text, color, (Fg, Bg), @render);
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_StaticText");
+    }
 }
 
 #[macro_export]

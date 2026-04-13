@@ -165,6 +165,10 @@ impl ContentPresenter {
         }
         s.layout.invalidate_measure(entity, world);
     }
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_ContentPresenter");
+    }
 }
 
 #[macro_export]

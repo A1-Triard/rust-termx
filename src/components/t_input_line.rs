@@ -45,6 +45,10 @@ impl TInputLine {
     property!(Termx, t_input_line, color_focused, (Fg, Bg), @render);
     property!(Termx, t_input_line, color_disabled, (Fg, Bg), @render);
     property!(Termx, t_input_line, color_ellipsis, (Fg, Bg), @render);
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_TInputLine");
+    }
 }
 
 #[macro_export]

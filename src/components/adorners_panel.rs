@@ -25,6 +25,10 @@ impl AdornersPanel {
         p.add(c.adorners_panel, world, AdornersPanel::new());
         p
     }
+
+    pub fn apply_implicit_style(entity: Entity<Termx>, world: &mut World<Termx>, termx: &Rc<dyn IsTermx>) {
+        View::apply_style(entity, world, termx, "IMPLICIT_AdornersPanel");
+    }
 }
 
 #[macro_export]
