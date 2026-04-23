@@ -11,6 +11,7 @@ use crate::components::focus_scope::FocusScope;
 use crate::components::layout_view::LayoutView;
 use crate::components::input_element::InputElement;
 use crate::components::panel::Panel;
+use crate::components::items_presenter::ItemsPresenter;
 use crate::components::view::*;
 use crate::systems::layout::LayoutExt;
 use crate::systems::render::RenderExt;
@@ -32,6 +33,8 @@ pub struct Init {
     init_group_box: fn(entity: Entity<Termx>, world: &mut World<Termx>),
     #[non_virt]
     init_control: fn(entity: Entity<Termx>, world: &mut World<Termx>, visual_tree: Entity<Termx>),
+    #[non_virt]
+    init_items_presenter: fn(entity: Entity<Termx>, world: &mut World<Termx>),
 }
 
 impl Init {
@@ -126,5 +129,15 @@ impl Init {
         s.render.add_visual_child(entity, visual_tree, world);
         s.layout.invalidate_measure(entity, world);
         InputElement::set_focusable(entity, world, &termx, false);
+    }
+
+    pub fn init_items_presenter_impl(
+        this: &Rc<dyn IsInit>,
+        entity: Entity<Termx>,
+        world: &mut World<Termx>,
+    ) {
+        let init = this.init();
+        let termx = init.termx.upgrade().unwrap();
+        ItemsPresenter::update_panel(entity, world, &termx);
     }
 }

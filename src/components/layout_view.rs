@@ -37,6 +37,7 @@ pub const LAYOUT_CONTROL: u16 = 9;
 pub const LAYOUT_M_BUTTON: u16 = 10;
 pub const LAYOUT_T_INPUT_LINE: u16 = 11;
 pub const LAYOUT_M_INPUT_LINE: u16 = 12;
+pub const LAYOUT_ITEMS_PRESENTER: u16 = 13;
 
 impl LayoutView {
     pub fn new(layout: u16) -> Self {
